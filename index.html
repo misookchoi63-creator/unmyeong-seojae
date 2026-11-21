@@ -603,6 +603,143 @@ function calculateSewoon(daewoon, startYear) {
   return targetYears;
 }
 
+// 합·충·형·파·해 자동 분석
+function analyzeRelations(pillars, daewoon, sewoon) {
+  const branches = [
+    { name: '년지', value: pillars.year?.slice(-1) },
+    { name: '월지', value: pillars.month?.slice(-1) },
+    { name: '일지', value: pillars.day?.slice(-1) },
+    { name: '시지', value: pillars.time === '시간 미상' ? null : pillars.time?.slice(-1) }
+  ].filter(x => x.value);
+
+  const combinations = [
+    ['子','丑'],['寅','亥'],['卯','戌'],
+    ['辰','酉'],['巳','申'],['午','未']
+  ];
+
+  const clashes = [
+    ['子','午'],['丑','未'],['寅','申'],
+    ['卯','酉'],['辰','戌'],['巳','亥']
+  ];
+
+  const breaks = [
+    ['子','酉'],['丑','辰'],['寅','亥'],
+    ['卯','午'],['巳','申'],['未','戌']
+  ];
+
+  const harms = [
+    ['子','未'],['丑','午'],['寅','巳'],
+    ['卯','辰'],['申','亥'],['酉','戌']
+  ];
+
+  const stemCombinations = [
+    ['甲','己'],['乙','庚'],['丙','辛'],
+    ['丁','壬'],['戊','癸']
+  ];
+
+  const results = [];
+
+  function add(type, a, b, source) {
+    if (!a || !b) return;
+    results.push({
+      type,
+      first: a.name,
+      second: b.name,
+      ganji: `${a.value}·${b.value}`,
+      source
+    });
+  }
+
+  // 원국 내부 지지 관계
+  for (let i = 0; i < branches.length; i++) {
+    for (let j = i + 1; j < branches.length; j++) {
+      const a = branches[i];
+      const b = branches[j];
+      const pair = [a.value, b.value];
+
+      if (combinations.some(p => p.every(x => pair.includes(x))))
+        add('육합', a, b, '원국');
+
+      if (clashes.some(p => p.every(x => pair.includes(x))))
+        add('충', a, b, '원국');
+
+      if (breaks.some(p => p.every(x => pair.includes(x))))
+        add('파', a, b, '원국');
+
+      if (harms.some(p => p.every(x => pair.includes(x))))
+        add('해', a, b, '원국');
+
+      if (a.value === b.value &&
+          ['辰','午','酉','亥'].includes(a.value))
+        add('자형', a, b, '원국');
+    }
+  }
+
+  // 지지 형살
+  const values = branches.map(x => x.value);
+  if (['寅','巳','申'].every(x => values.includes(x)))
+    results.push({type:'삼형',first:'원국',second:'寅巳申',ganji:'寅巳申',source:'원국'});
+
+  if (['丑','戌','未'].every(x => values.includes(x)))
+    results.push({type:'삼형',first:'원국',second:'丑戌未',ganji:'丑戌未',source:'원국'});
+
+  if (values.includes('子') && values.includes('卯'))
+    results.push({type:'상형',first:'원국',second:'子卯',ganji:'子卯',source:'원국'});
+
+  // 대운·세운과 원국의 지지 비교
+  function compareLuck(ganZhi, label) {
+    if (!ganZhi || ganZhi.length < 2) return;
+
+    const luckGan = ganZhi[0];
+    const luckZhi = ganZhi[1];
+
+    branches.forEach(base => {
+      const pair = [base.value, luckZhi];
+
+      if (combinations.some(p => p.every(x => pair.includes(x))))
+        results.push({type:'육합',first:base.name,second:label,ganji:pair.join('·'),source:label});
+
+      if (clashes.some(p => p.every(x => pair.includes(x))))
+        results.push({type:'충',first:base.name,second:label,ganji:pair.join('·'),source:label});
+
+      if (breaks.some(p => p.every(x => pair.includes(x))))
+        results.push({type:'파',first:base.name,second:label,ganji:pair.join('·'),source:label});
+
+      if (harms.some(p => p.every(x => pair.includes(x))))
+        results.push({type:'해',first:base.name,second:label,ganji:pair.join('·'),source:label});
+
+      if (base.value === luckZhi &&
+          ['辰','午','酉','亥'].includes(luckZhi))
+        results.push({type:'자형',first:base.name,second:label,ganji:pair.join('·'),source:label});
+
+      if (stemCombinations.some(p => p.includes(luckGan) &&
+          p.includes(pillars[base.name === '년지' ? 'year' :
+          base.name === '월지' ? 'month' :
+          base.name === '일지' ? 'day' : 'time']?.[0]))) {
+        results.push({
+          type:'천간합',
+          first:base.name,
+          second:label,
+          ganji:luckGan,
+          source:label
+        });
+      }
+    });
+  }
+
+  if (daewoon?.available) {
+    daewoon.list.forEach(item => {
+      compareLuck(item.ganZhi, `대운 ${item.startYear}~${item.endYear}년`);
+    });
+  }
+
+  (sewoon || []).forEach(item => {
+    compareLuck(item.ganZhi, `${item.year}년 세운`);
+  });
+
+  return results;
+}
+
 // 사주 계산
 $('birthForm').addEventListener('submit', e => {
 
