@@ -7,776 +7,364 @@
 <meta name="theme-color" content="#17251f">
 <title>운명의 서재 | AI 정통 사주</title>
 <script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.8/lunar.min.js"></script>
-
 <style>
-:root{
-  --green:#244b3b;
-  --green2:#356b51;
-  --gold:#c5a66b;
-  --paper:#faf8f2;
-  --ink:#252a27;
-  --muted:#737b75;
-  --line:#e4e5df;
-}
+:root{--green:#244b3c;--deep:#17251f;--gold:#c5a56a;--cream:#f7f5ef;--line:#e5e0d4;--text:#26332d}
 *{box-sizing:border-box}
-body{
-  margin:0;background:#f1f3ef;color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;
-  line-height:1.65
-}
-header{
-  background:linear-gradient(135deg,#142b22,#315743);
-  color:#fff;padding:30px 18px 26px;text-align:center
-}
-header .brand{color:#d7bd85;font-size:13px;letter-spacing:4px;margin-bottom:7px}
-header h1{margin:0;font-family:"Noto Serif KR",serif;font-size:30px;letter-spacing:2px}
-header p{margin:9px 0 0;color:#e2e8e1;font-size:13px}
-.container{width:min(900px,100%);margin:22px auto;padding:0 14px 45px}
-.panel{
-  background:#fff;border:1px solid var(--line);border-radius:16px;
-  padding:20px;margin-bottom:16px;box-shadow:0 4px 15px rgba(25,45,32,.04)
-}
-.panel h2{margin:0 0 15px;color:var(--green);font-size:19px}
-.panel h2 small{display:block;color:var(--muted);font-size:12px;font-weight:400;margin-top:3px}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
-.field{min-width:0}
-.field.full{grid-column:1/-1}
-label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#47534b}
-input,select{
-  width:100%;height:46px;border:1px solid #d9ded8;border-radius:9px;
-  background:#fff;padding:0 11px;font-size:15px;color:var(--ink)
-}
-input:focus,select:focus{outline:2px solid #b9d0c0;border-color:var(--green2)}
-.hint{color:var(--muted);font-size:12px;margin-top:5px}
-button{border:0;border-radius:10px;cursor:pointer;font-size:14px;font-weight:700;padding:13px 15px;min-height:45px}
+body{margin:0;background:var(--cream);color:var(--text);font-family:"Noto Serif KR","Batang",serif;line-height:1.75}
+header{background:linear-gradient(135deg,#17251f,#315744);color:#fff;padding:34px 18px 28px;text-align:center}
+header h1{margin:0;color:#e4c98f;font-size:29px;letter-spacing:3px}
+header p{margin:8px 0 0;color:#e6e2d8;font-size:13px}
+main{max-width:900px;margin:22px auto;padding:0 14px 50px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:15px;padding:20px;margin-bottom:17px;box-shadow:0 5px 18px #17251f08}
+.panel h2{font-size:19px;color:var(--green);margin:0 0 15px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:13px;font-weight:bold;color:#46564c}
+input,select{width:100%;min-height:45px;border:1px solid #d9ded8;border-radius:8px;padding:9px 11px;background:#fff;color:#26332d;font-size:15px}
+input:focus,select:focus{outline:2px solid #b9cdbf;border-color:var(--green)}
+.full{grid-column:1/-1}
+.note{font-size:12px;color:#777;margin:5px 0 0}
+.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+button{border:0;border-radius:9px;padding:13px 10px;background:var(--green);color:#fff;font-size:14px;font-weight:bold;cursor:pointer}
+button.secondary{background:#e9eee9;color:#244b3c}
+button.gold{background:#9b7840;color:#fff}
 button:disabled{opacity:.55;cursor:wait}
-.primary{background:var(--green);color:#fff;width:100%;margin-top:18px;font-size:16px}
-.secondary{background:#edf2ed;color:var(--green)}
-.gold{background:#f4eddf;color:#715a2e}
-.button-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:14px}
-.button-grid button{width:100%}
-.status{display:none;margin:14px 0;padding:12px;border-radius:9px;background:#f2f5f1;color:var(--green);font-size:13px;white-space:pre-wrap}
-.status.error{background:#fff0ed;color:#a23c2c}
-#resultSection{display:none}
-.result-title{
-  color:#fff;font-size:23px;font-weight:800;margin:-20px -20px 0;
-  padding:22px 20px 15px;border-radius:15px 15px 0 0;
-  background:linear-gradient(120deg,#203e30,#38634a);
-  border-bottom:4px solid var(--gold)
-}
-.result-subtitle{font-size:13px;color:var(--muted);padding:12px 0 15px}
-.pillar-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:14px 0}
-.pillar{border:1px solid #e3e7e1;border-radius:10px;text-align:center;overflow:hidden;background:#fbfcfa}
-.pillar .name{background:#edf2ed;color:var(--green);padding:6px 2px;font-size:12px;font-weight:700}
-.pillar .ganji{padding:13px 2px;font-family:serif;font-size:24px;font-weight:700;letter-spacing:2px}
-.pillar .detail{font-size:10px;color:var(--muted);padding:0 2px 8px;min-height:28px}
-.info-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
-.info-item{background:#f7f8f5;border-radius:8px;padding:10px;font-size:12px}
-.info-item b{display:block;color:var(--green);margin-bottom:3px}
-.data-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
-.data-table th,.data-table td{border:1px solid #e4e7e1;padding:8px 5px;text-align:center}
-.data-table th{background:#edf2ed;color:var(--green)}
-.data-table td{background:#fff}
-.section-title{
-  color:#171a18;font-size:18px;font-weight:800;margin:23px 0 9px;
-  padding-left:10px;border-left:4px solid #252525
-}
-
-/* 보고서 기본 디자인 */
-.ai-content{border-top:1px solid var(--line);padding-top:18px;margin-top:0}
-#interpretation{overflow-wrap:anywhere;word-break:keep-all;font-size:16px;line-height:1.9;color:#303630}
-#interpretation p{margin:0 0 16px;font-size:16px;line-height:1.95}
-
-/* 대항목 */
-#interpretation .report-heading{
-  color:#fff;background:linear-gradient(120deg,#203e30,#38634a);
-  font-size:19px;font-weight:850;line-height:1.5;
-  margin:30px 0 17px;padding:15px 14px;
-  border-radius:9px;border-left:6px solid #c6a66b;
-  box-shadow:0 3px 9px rgba(30,55,40,.10)
-}
-
-/* 소항목 */
-#interpretation .report-subheading{
-  color:#26392e;font-size:17px;font-weight:800;line-height:1.55;
-  margin:23px 0 12px;padding:9px 12px;
-  background:#f0f4ef;border-left:4px solid #568365;
-  border-bottom:1px solid #dce6dc;border-radius:0 7px 7px 0
-}
-
-/* 항목별 색상 */
-#interpretation .topic-wealth{border-left-color:#b58a42;background:#f8f1e3;color:#634a22}
-#interpretation .topic-love{border-left-color:#a65d69;background:#f8edef;color:#703e49}
-#interpretation .topic-health{border-left-color:#4b8290;background:#edf4f6;color:#315b66}
-#interpretation .topic-time{border-left-color:#77639b;background:#f2eff8;color:#51436c}
-#interpretation strong{color:#244b3b;font-weight:850;background:linear-gradient(transparent 65%,#e9efdf 65%)}
-#interpretation ul,#interpretation ol{
-  padding:14px 14px 14px 34px;margin:10px 0 20px;
-  background:#f7f8f5;border:1px solid #e5e9e2;border-radius:9px
-}
-#interpretation li{margin-bottom:9px;line-height:1.85}
-#interpretation li:last-child{margin-bottom:0}
-
-/* 표 디자인 */
-#interpretation .report-table-wrap{
-  width:100%;overflow-x:auto;margin:16px 0 22px;
-  border:1px solid #dce3da;border-radius:9px;
-  box-shadow:0 2px 7px rgba(30,50,35,.04)
-}
-#interpretation table{width:100%;min-width:320px;border-collapse:collapse;font-size:14px}
-#interpretation th,#interpretation td{
-  border:1px solid #e0e5de;padding:11px 9px;
-  text-align:left;vertical-align:top;line-height:1.65
-}
-#interpretation th{background:#244b3b;color:#fff;font-weight:800}
-#interpretation td{background:#fff}
-#interpretation tr:nth-child(even) td{background:#f5f7f3}
-#interpretation blockquote{
-  border-left:4px solid #c5a66b;margin:17px 0;padding:13px 15px;
-  background:#faf5e9;border-radius:0 8px 8px 0;color:#5e5038;line-height:1.85
-}
-.result-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
-.result-actions button{width:100%}
-.notice{color:#7b817b;font-size:11px;margin-top:18px}
-footer{text-align:center;color:#89918a;font-size:11px;padding:15px}
-
-@media(max-width:520px){
-  header{padding:25px 14px}
-  header h1{font-size:26px}
-  .panel{padding:16px}
-  .form-grid{gap:11px}
-  .pillar .ganji{font-size:21px}
-  .result-title{margin:-16px -16px 0;padding:18px 16px;font-size:21px}
-  #interpretation{font-size:15px}
-  #interpretation p{font-size:15px}
-  #interpretation .report-heading{font-size:18px;padding:13px 11px}
-  #interpretation .report-subheading{font-size:16px}
-  #interpretation table{font-size:13px}
-  #interpretation th,#interpretation td{padding:9px 7px}
-}
+#status{display:none;padding:12px;border-radius:9px;background:#f2f5f1;color:#315744;font-size:13px;margin-top:12px}
+#result{display:none}
+.result-head{text-align:center;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:20px}
+.result-head h2{font-size:23px;color:var(--green);margin:0}
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:15px 0}
+.pillar{background:#f5f4ee;border:1px solid #e5e0d4;border-radius:9px;text-align:center;padding:10px 4px}
+.pillar b{display:block;font-size:12px;color:#7c806f}
+.pillar strong{display:block;font-size:25px;color:#244b3c;margin:4px 0}
+.pillar small{font-size:11px;color:#777}
+#interpretation{font-family:"Noto Serif KR","Batang",serif;font-size:15px;line-height:1.95;overflow-wrap:anywhere}
+#interpretation h1{font-size:23px;color:#244b3c;border-bottom:2px solid #c5a56a;padding-bottom:10px}
+#interpretation h2{font-size:20px;color:#244b3c;border-left:4px solid #244b3c;padding-left:11px;margin:32px 0 12px}
+#interpretation h3{font-size:17px;color:#8a6c37;margin:23px 0 8px}
+#interpretation p{margin:9px 0}
+#interpretation ul{padding-left:22px}
+#interpretation li{margin:5px 0}
+#interpretation table{width:100%;border-collapse:collapse;margin:13px 0;font-size:13px}
+#interpretation th,#interpretation td{border:1px solid #ddd8ca;padding:8px;text-align:left}
+#interpretation th{background:#f1f0e9;color:#244b3c}
+#interpretation blockquote{margin:12px 0;padding:10px 14px;background:#f6f5ef;border-left:3px solid #c5a56a;color:#5b5b50}
+.report-actions{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}
+.report-actions button{flex:1;min-width:120px}
+.hidden{display:none!important}
+footer{text-align:center;color:#8a8a80;font-size:11px;padding:20px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.panel{padding:16px}.actions{grid-template-columns:1fr 1fr}header h1{font-size:25px}}
 @media print{
-  body{background:#fff}
-  header,.input-panel,.action-panel,.result-actions,footer{display:none!important}
-  .container{width:100%;margin:0;padding:0}
-  .panel{border:0;box-shadow:none;padding:0;margin:0}
-  #resultSection{display:block!important}
-  #interpretation{font-size:12pt;line-height:1.8}
-  #interpretation p{font-size:12pt}
-  #interpretation .report-heading{
-    color:#fff!important;background:#244b3b!important;
-    print-color-adjust:exact;-webkit-print-color-adjust:exact;
-    font-size:17pt;break-after:avoid
-  }
-  #interpretation .report-subheading{
-    print-color-adjust:exact;-webkit-print-color-adjust:exact;
-    break-after:avoid
-  }
-  #interpretation th{
-    background:#244b3b!important;color:#fff!important;
-    print-color-adjust:exact;-webkit-print-color-adjust:exact
-  }
-  #interpretation tr{break-inside:avoid}
-  .pillar-grid{break-inside:avoid}
-  .section-title{break-after:avoid}
+body{background:#fff;color:#111}
+header,.input-area,.report-actions,footer,.no-print{display:none!important}
+main{max-width:none;margin:0;padding:0}
+.panel{border:0;box-shadow:none;padding:0;margin:0}
+#result{display:block!important}
+#interpretation{font-size:12pt;line-height:1.85}
+#interpretation h2{break-after:avoid}
+#interpretation table{break-inside:avoid}
 }
 </style>
 </head>
-
 <body>
 <header>
-  <div class="brand">MY FATE · MY STORY</div>
-  <h1>운명의 서재</h1>
-  <p>나의 사주를 읽고, 삶의 흐름을 살펴보다</p>
+<h1>운명의 서재</h1>
+<p>태어난 시간에 담긴 삶의 흐름을 읽다</p>
 </header>
 
-<main class="container">
-
-<section class="panel input-panel">
-  <h2>사주 정보 입력
-    <small>정확한 생년월일과 출생 시간을 입력해 주세요.</small>
-  </h2>
-
-  <div class="form-grid">
-    <div class="field full">
-      <label for="personName">이름 또는 호칭</label>
-      <input id="personName" type="text" placeholder="이름을 입력하세요">
-    </div>
-    <div class="field">
-      <label for="gender">성별</label>
-      <select id="gender">
-        <option value="female">여성</option>
-        <option value="male">남성</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="calendarType">달력 구분</label>
-      <select id="calendarType">
-        <option value="solar">양력</option>
-        <option value="lunar">음력</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="birthYear">출생 연도</label>
-      <input id="birthYear" type="number" inputmode="numeric" placeholder="예: 1970">
-    </div>
-    <div class="field">
-      <label for="birthMonth">출생 월</label>
-      <select id="birthMonth"></select>
-    </div>
-    <div class="field">
-      <label for="birthDay">출생 일</label>
-      <select id="birthDay"></select>
-    </div>
-    <div class="field" id="leapField" style="display:none">
-      <label for="leapMonth">음력 윤달 여부</label>
-      <select id="leapMonth">
-        <option value="no">평달</option>
-        <option value="yes">윤달</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="birthHour">출생 시간</label>
-      <select id="birthHour">
-        <option value="-1">모름</option>
-        <option value="0">자시 (23:00~00:59)</option>
-        <option value="1">축시 (01:00~02:59)</option>
-        <option value="3">인시 (03:00~04:59)</option>
-        <option value="5">묘시 (05:00~06:59)</option>
-        <option value="7">진시 (07:00~08:59)</option>
-        <option value="9">사시 (09:00~10:59)</option>
-        <option value="11">오시 (11:00~12:59)</option>
-        <option value="13">미시 (13:00~14:59)</option>
-        <option value="15">신시 (15:00~16:59)</option>
-        <option value="17">유시 (17:00~18:59)</option>
-        <option value="19">술시 (19:00~20:59)</option>
-        <option value="21">해시 (21:00~22:59)</option>
-      </select>
-    </div>
-    <div class="field">
-      <label for="maritalStatus">혼인 상태</label>
-      <select id="maritalStatus">
-        <option value="미혼">미혼</option>
-        <option value="연애 중">연애 중</option>
-        <option value="기혼">기혼</option>
-        <option value="이혼">이혼</option>
-        <option value="사별">사별</option>
-      </select>
-    </div>
-    <div class="field full">
-      <label for="birthPlace">출생 지역 (선택)</label>
-      <input id="birthPlace" type="text" placeholder="예: 서울, 부산, 인천">
-      <div class="hint">출생 지역은 참고 정보로 AI 풀이에 전달됩니다.</div>
-    </div>
-  </div>
-
-  <button class="primary" id="calculateBtn" onclick="calculateSaju()">사주 원국 확인하기</button>
-  <div id="status" class="status"></div>
+<main>
+<section class="input-area">
+<div class="panel">
+<h2>사주 정보 입력</h2>
+<div class="grid">
+<div class="field">
+<label for="personName">이름 또는 호칭</label>
+<input id="personName" type="text" placeholder="이름을 입력하세요">
+</div>
+<div class="field">
+<label for="gender">성별</label>
+<select id="gender"><option value="female">여성</option><option value="male">남성</option></select>
+</div>
+<div class="field">
+<label for="calendarType">생일 구분</label>
+<select id="calendarType"><option value="solar">양력</option><option value="lunar">음력</option></select>
+</div>
+<div class="field">
+<label for="leapMonth">음력 윤달 여부</label>
+<select id="leapMonth"><option value="no">평달</option><option value="yes">윤달</option></select>
+</div>
+<div class="field">
+<label for="birthDate">생년월일</label>
+<input id="birthDate" type="date">
+</div>
+<div class="field">
+<label for="birthTime">태어난 시각</label>
+<input id="birthTime" type="time">
+</div>
+<div class="field">
+<label for="timeUnknown">출생 시각을 모르는 경우</label>
+<select id="timeUnknown"><option value="no">알고 있음</option><option value="yes">모름</option></select>
+</div>
+<div class="field">
+<label for="maritalStatus">혼인 상태</label>
+<select id="maritalStatus">
+<option value="미혼">미혼</option>
+<option value="연애 중">연애 중</option>
+<option value="기혼">기혼</option>
+<option value="이혼">이혼</option>
+<option value="사별">사별</option>
+</select>
+</div>
+<div class="field full">
+<label for="birthPlace">출생 지역</label>
+<input id="birthPlace" type="text" value="대한민국" placeholder="예: 서울, 부산, 대구">
+<p class="note">한국 출생은 표준시 기준 보정값을 적용합니다. 해외 출생은 해당 지역의 시간대 정보가 필요할 수 있습니다.</p>
+</div>
+</div>
+<div class="actions" style="margin-top:18px">
+<button onclick="calculateSaju()">사주 원국 계산</button>
+<button class="secondary" onclick="resetForm()">초기화</button>
+</div>
+<div id="status" role="status"></div>
+</div>
 </section>
 
-<section class="panel" id="chartSection" style="display:none">
-  <h2>나의 사주 원국</h2>
-  <div id="birthSummary"></div>
-  <div class="pillar-grid" id="pillarGrid"></div>
-  <div class="info-list" id="pillarInfo"></div>
-
-  <h3 class="section-title">대운 흐름</h3>
-  <div id="daewoonView"></div>
-
-  <h3 class="section-title">향후 10년 세운</h3>
-  <div id="sewoonView"></div>
+<section id="result" class="panel">
+<div class="result-head">
+<h2 id="resultTitle">사주 원국</h2>
+<p id="birthSummary"></p>
+</div>
+<div class="pillars" id="pillars"></div>
+<div class="report-actions no-print">
+<button onclick="runAnalysis('full')">종합 사주 심층 분석</button>
+<button onclick="runAnalysis('year2027')">2027년 신년 운세</button>
+<button onclick="runAnalysis('wealth')">재물운·직업운</button>
+<button onclick="runAnalysis('love')">애정운·결혼·재혼운</button>
+<button class="secondary" onclick="runAnalysis('today')">오늘의 운세</button>
+<button class="gold" onclick="printReport()">보고서 인쇄 / PDF 저장</button>
+</div>
+<div id="interpretation" aria-live="polite"></div>
 </section>
-
-<section class="panel action-panel" id="actionSection" style="display:none">
-  <h2>AI 사주 심층 풀이
-    <small>원하는 분석 항목을 선택하세요.</small>
-  </h2>
-  <div class="button-grid">
-    <button class="secondary" onclick="requestInterpretation('full')">종합 사주 분석</button>
-    <button class="secondary" onclick="requestInterpretation('today')">오늘의 운세</button>
-    <button class="gold" onclick="requestInterpretation('wealth')">재물·직업운</button>
-    <button class="gold" onclick="requestInterpretation('love')">애정·결혼운</button>
-    <button class="secondary" onclick="requestInterpretation('year2027')">2027년 운세</button>
-  </div>
-  <div id="aiStatus" class="status"></div>
-</section>
-
-<section class="panel" id="resultSection">
-  <h2 class="result-title" id="resultTitle">사주 분석 결과</h2>
-  <div class="result-subtitle" id="resultSubtitle"></div>
-  <div class="ai-content" id="interpretation"></div>
-  <div class="result-actions">
-    <button class="secondary" onclick="printReport()">인쇄하기</button>
-    <button class="gold" onclick="printReport()">PDF 저장하기</button>
-  </div>
-  <div class="notice">
-    본 결과는 전통 명리학을 바탕으로 한 참고용 해석입니다.
-    중요한 의료·법률·금융 결정은 전문적인 상담과 함께 판단하시기 바랍니다.
-  </div>
-</section>
-
 </main>
-<footer>운명의 서재 · AI 명리학 해석 서비스</footer>
+<footer>운명의 서재 · 전통 명리 해석을 바탕으로 한 참고용 콘텐츠입니다.</footer>
 
 <script>
-"use strict";
-
 let currentChart=null;
-let currentMode="full";
-const $=id=>document.getElementById(id);
 
-const STEMS=["甲","乙","丙","丁","戊","己","庚","辛","壬","癸"];
-const BRANCHES=["子","丑","寅","卯","辰","巳","午","未","申","酉","戌","亥"];
-
-const STEM_ELEMENT={
-  "甲":"목","乙":"목","丙":"화","丁":"화","戊":"토",
-  "己":"토","庚":"금","辛":"금","壬":"수","癸":"수"
-};
-const BRANCH_ELEMENT={
-  "子":"수","丑":"토","寅":"목","卯":"목","辰":"토","巳":"화",
-  "午":"화","未":"토","申":"금","酉":"금","戌":"토","亥":"수"
-};
-
-function showStatus(message,isError=false,target="status"){
-  const el=$(target);
-  el.style.display="block";
-  el.className=isError?"status error":"status";
-  el.textContent=message;
+function showStatus(message,isError=false){
+ const box=document.getElementById("status");
+ box.style.display="block";
+ box.textContent=message;
+ box.style.background=isError?"#fff0ed":"#f2f5f1";
+ box.style.color=isError?"#9b3426":"#315744";
 }
-function hideStatus(target="status"){$(target).style.display="none"}
-
-function initDateSelectors(){
-  for(let i=1;i<=12;i++)$("birthMonth").add(new Option(i+"월",i));
-  updateDays();
+function resetForm(){
+ document.querySelectorAll(".input-area input").forEach(el=>{if(el.id==="birthPlace")el.value="대한민국";else el.value="";});
+ document.getElementById("gender").value="female";
+ document.getElementById("calendarType").value="solar";
+ document.getElementById("leapMonth").value="no";
+ document.getElementById("timeUnknown").value="no";
+ document.getElementById("maritalStatus").value="미혼";
+ document.getElementById("result").style.display="none";
+ document.getElementById("status").style.display="none";
+ currentChart=null;
 }
-function updateDays(){
-  const month=Number($("birthMonth").value||1);
-  const year=Number($("birthYear").value||2000);
-  const calendar=$("calendarType").value;
-  const max=calendar==="solar"?new Date(year,month,0).getDate():30;
-  const old=Number($("birthDay").value||1);
-  $("birthDay").innerHTML="";
-  for(let i=1;i<=max;i++)$("birthDay").add(new Option(i+"일",i));
-  $("birthDay").value=String(Math.min(old,max));
+function getPillarText(eight,kind){
+ const names={year:"년주",month:"월주",day:"일주",time:"시주"};
+ const gan=eight["get"+kind+"Gan"]?.();
+ const zhi=eight["get"+kind+"Zhi"]?.();
+ return {name:names[kind.toLowerCase()]||kind,gan:gan||"",zhi:zhi||""};
 }
-$("birthMonth").addEventListener("change",updateDays);
-$("birthYear").addEventListener("change",updateDays);
-$("calendarType").addEventListener("change",()=>{
-  $("leapField").style.display=$("calendarType").value==="lunar"?"block":"none";
-  updateDays();
-});
-
-function safeCall(obj,method,fallback=""){
-  try{
-    if(obj&&typeof obj[method]==="function"){
-      const value=obj[method]();
-      return value==null?fallback:value;
-    }
-  }catch(e){}
-  return fallback;
+function safeCall(obj,method){
+ try{return typeof obj?.[method]==="function"?obj[method]():null;}catch(e){return null;}
 }
-function toArray(value){
-  if(Array.isArray(value))return value;
-  if(value==null||value==="")return [];
-  return [value];
-}
-function validateInput(){
-  const year=Number($("birthYear").value);
-  const month=Number($("birthMonth").value);
-  const day=Number($("birthDay").value);
-  if(!year||year<1900||year>2100)throw new Error("출생 연도를 1900년부터 2100년 사이로 입력해 주세요.");
-  if(!month||month<1||month>12||!day||day<1||day>30)throw new Error("생년월일을 올바르게 입력해 주세요.");
-  if($("calendarType").value==="solar"){
-    const date=new Date(year,month-1,day);
-    if(date.getFullYear()!==year||date.getMonth()!==month-1||date.getDate()!==day)
-      throw new Error("실제로 존재하는 양력 날짜를 입력해 주세요.");
-  }
-  return {year,month,day};
-}
-function makeBirthDate(input){
-  const {year,month,day}=input;
-  const hourValue=Number($("birthHour").value);
-  const hasBirthHour=hourValue>=0;
-  const hour=hasBirthHour?hourValue:12;
-  let solar,lunar;
-  if($("calendarType").value==="solar"){
-    solar=Solar.fromYmdHms(year,month,day,hour,0,0);
-    lunar=solar.getLunar();
-  }else{
-    const isLeap=$("leapMonth").value==="yes";
-    lunar=Lunar.fromYmd(year,isLeap?-month:month,day);
-    solar=lunar.getSolar();
-  }
-  if(!solar||!lunar)throw new Error("생년월일을 변환하지 못했습니다. 입력 내용을 확인해 주세요.");
-  return {solar,lunar,hasBirthHour,hour};
-}
-function getPillars(eight,hasBirthHour){
-  const result={
-    year:safeCall(eight,"getYear"),
-    month:safeCall(eight,"getMonth"),
-    day:safeCall(eight,"getDay"),
-    time:hasBirthHour?safeCall(eight,"getTime"):"미상"
-  };
-  ["year","month","day"].forEach(key=>{
-    if(!result[key])throw new Error("사주 원국 계산에 실패했습니다.");
-  });
-  return result;
-}
-function getPillarAnalysis(eight,hasBirthHour){
-  const rows=[
-    {key:"year",name:"년주",stem:"getYearGan",branch:"getYearZhi",hidden:"getYearHideGan",stemGod:"getYearShiShenGan",branchGod:"getYearShiShenZhi"},
-    {key:"month",name:"월주",stem:"getMonthGan",branch:"getMonthZhi",hidden:"getMonthHideGan",stemGod:"getMonthShiShenGan",branchGod:"getMonthShiShenZhi"},
-    {key:"day",name:"일주",stem:"getDayGan",branch:"getDayZhi",hidden:"getDayHideGan",stemGod:"getDayShiShenGan",branchGod:"getDayShiShenZhi"},
-    {key:"time",name:"시주",stem:"getTimeGan",branch:"getTimeZhi",hidden:"getTimeHideGan",stemGod:"getTimeShiShenGan",branchGod:"getTimeShiShenZhi"}
-  ];
-  return rows.map(row=>{
-    if(row.key==="time"&&!hasBirthHour){
-      return {pillar:row.name,stem:"미상",branch:"미상",hiddenStems:[],stemTenGod:"출생 시간 미상",branchTenGod:"출생 시간 미상"};
-    }
-    return {
-      pillar:row.name,
-      stem:safeCall(eight,row.stem),
-      branch:safeCall(eight,row.branch),
-      hiddenStems:toArray(safeCall(eight,row.hidden,[])),
-      stemTenGod:safeCall(eight,row.stemGod),
-      branchTenGod:safeCall(eight,row.branchGod)
-    };
-  });
-}
-function getDaewoon(eight,gender){
-  const genderCode=gender==="male"?1:0;
-  try{
-    const yun=eight.getYun(genderCode,2);
-    if(!yun)throw new Error("대운 정보 없음");
-    const daYunList=yun.getDaYun(10)||[];
-    const startYear=safeCall(yun,"getStartYear");
-    const startMonth=safeCall(yun,"getStartMonth");
-    const startDay=safeCall(yun,"getStartDay");
-    const list=daYunList.map(item=>({
-      ganZhi:safeCall(item,"getGanZhi"),
-      startAge:safeCall(item,"getStartAge"),
-      endAge:safeCall(item,"getEndAge"),
-      startYear:safeCall(item,"getStartYear"),
-      endYear:safeCall(item,"getEndYear")
-    }));
-    return {
-      available:list.length>0,
-      direction:safeCall(yun,"getDirection"),
-      startAge:safeCall(yun,"getStartYear"),
-      startDate:[startYear,startMonth,startDay].filter(v=>v!=="").join("-"),
-      list
-    };
-  }catch(e){
-    return {available:false,direction:"확인 필요",startAge:"",startDate:"",list:[],note:"대운 계산 정보를 가져오지 못했습니다."};
-  }
-}
-function getSewoon(birthYear){
-  const thisYear=new Date().getFullYear();
-  const list=[];
-  for(let year=thisYear;year<thisYear+10;year++){
-    try{
-      const eight=Solar.fromYmd(year,7,1).getLunar().getEightChar();
-      list.push({year,ganZhi:safeCall(eight,"getYear"),age:year-birthYear+1});
-    }catch(e){list.push({year,ganZhi:"계산 불가",age:year-birthYear+1});}
-  }
-  return list;
-}
-function getPillarParts(pillar){
-  if(!pillar||pillar==="미상")return ["",""];
-  return [pillar.charAt(0),pillar.charAt(1)];
-}
-function getElementSummary(pillars){
-  const counts={목:0,화:0,토:0,금:0,수:0};
-  Object.values(pillars).forEach(value=>{
-    if(!value||value==="미상")return;
-    const [stem,branch]=getPillarParts(value);
-    if(STEM_ELEMENT[stem])counts[STEM_ELEMENT[stem]]++;
-    if(BRANCH_ELEMENT[branch])counts[BRANCH_ELEMENT[branch]]++;
-  });
-  return counts;
-}
-function renderPillars(pillars,analysis){
-  const labels=["년주","월주","일주","시주"];
-  const keys=["year","month","day","time"];
-  $("pillarGrid").innerHTML=keys.map((key,i)=>{
-    const parts=getPillarParts(pillars[key]||"미상");
-    const detail=analysis[i]?"천간 "+(analysis[i].stemTenGod||"-")+" · 지지 "+(analysis[i].branchTenGod||"-"):"";
-    return `<div class="pillar"><div class="name">${labels[i]}</div><div class="ganji">${parts[0]||"?"}<br>${parts[1]||"?"}</div><div class="detail">${detail}</div></div>`;
-  }).join("");
-  $("pillarInfo").innerHTML=analysis.map(item=>`
-    <div class="info-item"><b>${item.pillar}</b>
-    천간: ${item.stem||"-"} (${item.stemTenGod||"-"})<br>
-    지지: ${item.branch||"-"} (${item.branchTenGod||"-"})<br>
-    지장간: ${item.hiddenStems.length?item.hiddenStems.join(", "):"-"}</div>
-  `).join("");
-}
-function renderDaewoon(data){
-  if(!data||!data.available||!data.list.length){
-    $("daewoonView").innerHTML="<p class='hint'>대운 자료를 가져오지 못했습니다. 출생 정보와 계산 라이브러리를 확인해 주세요.</p>";
-    return;
-  }
-  let html="<table class='data-table'><thead><tr><th>순서</th><th>대운</th><th>시작 나이</th><th>종료 나이</th><th>기간</th></tr></thead><tbody>";
-  data.list.forEach((item,index)=>{
-    html+=`<tr><td>${index+1}</td><td><b>${item.ganZhi||"-"}</b></td><td>${item.startAge||"-"}</td><td>${item.endAge||"-"}</td><td>${item.startYear||"-"}~${item.endYear||"-"}</td></tr>`;
-  });
-  $("daewoonView").innerHTML=html+"</tbody></table>";
-}
-function renderSewoon(list){
-  $("sewoonView").innerHTML=`
-    <table class="data-table"><thead><tr><th>연도</th><th>세운</th><th>나이(세는나이)</th></tr></thead>
-    <tbody>${list.map(item=>`<tr><td>${item.year}</td><td><b>${item.ganZhi}</b></td><td>${item.age}</td></tr>`).join("")}</tbody></table>`;
-}
-function buildChart(){
-  if(!window.Solar||!window.Lunar)throw new Error("사주 계산 라이브러리를 불러오지 못했습니다. 인터넷 연결 후 다시 시도해 주세요.");
-  const input=validateInput();
-  const birth=makeBirthDate(input);
-  const eight=birth.lunar.getEightChar();
-  if(!eight)throw new Error("사주 원국을 계산하지 못했습니다.");
-  const pillars=getPillars(eight,birth.hasBirthHour);
-  const gender=$("gender").value;
-  const analysis=getPillarAnalysis(eight,birth.hasBirthHour);
-  const daewoon=getDaewoon(eight,gender);
-  const sewoon=getSewoon(birth.solar.getYear());
-  const solarDate=[birth.solar.getYear(),String(birth.solar.getMonth()).padStart(2,"0"),String(birth.solar.getDay()).padStart(2,"0")].join("-");
-  const lunarDate=[birth.lunar.getYear(),birth.lunar.getMonth(),birth.lunar.getDay()].join("-");
-  return {
-    name:$("personName").value.trim()||"이름 미입력",
-    gender:gender==="male"?"남성":"여성",
-    genderCode:gender,
-    maritalStatus:$("maritalStatus").value,
-    calendar:$("calendarType").value,
-    solarDate,lunarDate,
-    zodiac:safeCall(birth.lunar,"getYearShengXiao"),
-    pillars,
-    pillarAnalysis:analysis,
-    place:$("birthPlace").value.trim(),
-    birthHour:birth.hasBirthHour?$("birthHour").selectedOptions[0].text:"모름",
-    hasBirthHour:birth.hasBirthHour,
-    daewoon,sewoon,
-    elementCount:getElementSummary(pillars),
-    calculationNotes:[
-      birth.hasBirthHour?"":"출생 시간을 모르는 경우 시주는 미상으로 처리했습니다. 대운 계산은 출생 시간의 불확실성에 영향을 받을 수 있습니다.",
-      $("calendarType").value==="lunar"&&$("leapMonth").value==="yes"?"음력 윤달로 입력했습니다.":""
-    ].filter(Boolean)
-  };
+function getElement(char){
+ const map={"갑":"목","을":"목","인":"목","묘":"목","병":"화","정":"화","사":"화","오":"화","무":"토","기":"토","진":"토","술":"토","축":"토","미":"토","경":"금","신":"금","유":"금","임":"수","계":"수","해":"수","자":"수"};
+ return map[char]||"미상";
 }
 function calculateSaju(){
-  hideStatus();
-  $("calculateBtn").disabled=true;
-  $("calculateBtn").textContent="사주 계산 중...";
-  try{
-    currentChart=buildChart();
-    $("birthSummary").innerHTML=`
-      <div class="info-list">
-        <div class="info-item"><b>이름</b>${currentChart.name}</div>
-        <div class="info-item"><b>성별 / 혼인 상태</b>${currentChart.gender} / ${currentChart.maritalStatus}</div>
-        <div class="info-item"><b>양력 생일</b>${currentChart.solarDate}</div>
-        <div class="info-item"><b>음력 생일</b>${currentChart.lunarDate}</div>
-        <div class="info-item"><b>띠</b>${currentChart.zodiac||"-"}</div>
-        <div class="info-item"><b>출생 시간</b>${currentChart.birthHour}</div>
-      </div>
-      ${currentChart.calculationNotes.map(x=>`<p class="hint">${x}</p>`).join("")}`;
-    renderPillars(currentChart.pillars,currentChart.pillarAnalysis);
-    renderDaewoon(currentChart.daewoon);
-    renderSewoon(currentChart.sewoon);
-    $("chartSection").style.display="block";
-    $("actionSection").style.display="block";
-    $("resultSection").style.display="none";
-    showStatus("사주 원국 계산이 완료되었습니다. 아래에서 원하는 AI 풀이를 선택하세요.");
-    $("chartSection").scrollIntoView({behavior:"smooth",block:"start"});
-  }catch(error){showStatus(error.message||"사주 계산 중 오류가 발생했습니다.",true);}
-  finally{$("calculateBtn").disabled=false;$("calculateBtn").textContent="사주 원국 확인하기";}
-}
+ try{
+  if(!window.Lunar){showStatus("만세력 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.",true);return;}
+  const dateValue=document.getElementById("birthDate").value;
+  if(!dateValue){showStatus("생년월일을 입력해 주세요.",true);return;}
+  const [y,m,d]=dateValue.split("-").map(Number);
+  const calendar=document.getElementById("calendarType").value;
+  const isLeap=document.getElementById("leapMonth").value==="yes";
+  const unknown=document.getElementById("timeUnknown").value==="yes";
+  const timeValue=document.getElementById("birthTime").value;
+  if(!unknown&&!timeValue){showStatus("태어난 시각을 입력하거나 '모름'을 선택해 주세요.",true);return;}
+  if(calendar==="lunar"&&isLeap&&typeof Lunar.fromYmd!=="function"){showStatus("음력 윤달 변환을 지원하지 않는 환경입니다.",true);return;}
 
-/* AI 답변을 안전하게 제목, 문단, 표, 목록으로 변환 */
-function appendInlineText(parent,text){
-  const pattern=/(\*\*[^*]+\*\*|__[^_]+__)/g;
-  let last=0,match;
-  while((match=pattern.exec(text))!==null){
-    if(match.index>last)parent.appendChild(document.createTextNode(text.slice(last,match.index)));
-    const strong=document.createElement("strong");
-    strong.textContent=match[0].replace(/^\*\*|\*\*$/g,"").replace(/^__|__$/g,"");
-    parent.appendChild(strong);
-    last=pattern.lastIndex;
-  }
-  if(last<text.length)parent.appendChild(document.createTextNode(text.slice(last)));
-}
-function classifyHeading(element,text){
-  if(/재물|금전|사업|직업|투자/.test(text))element.classList.add("topic-wealth");
-  else if(/결혼|애정|연애|배우자|재혼|인연/.test(text))element.classList.add("topic-love");
-  else if(/건강|질병|체력/.test(text))element.classList.add("topic-health");
-  else if(/대운|세운|연도|시기|운의 흐름/.test(text))element.classList.add("topic-time");
-}
-function renderInterpretation(rawText){
-  const container=$("interpretation");
-  container.replaceChildren();
-  const lines=String(rawText||"").replace(/\r/g,"").split("\n");
-  let paragraph=[],listElement=null,tableRows=[];
-
-  function flushParagraph(){
-    if(!paragraph.length)return;
-    const p=document.createElement("p");
-    appendInlineText(p,paragraph.join(" "));
-    container.appendChild(p);
-    paragraph=[];
-  }
-  function flushList(){listElement=null;}
-  function flushTable(){
-    if(!tableRows.length)return;
-    const wrap=document.createElement("div");
-    wrap.className="report-table-wrap";
-    const table=document.createElement("table");
-    tableRows.forEach((row,index)=>{
-      const tr=document.createElement("tr");
-      row.forEach(cell=>{
-        const td=document.createElement(index===0?"th":"td");
-        td.textContent=cell;
-        tr.appendChild(td);
-      });
-      table.appendChild(tr);
-    });
-    wrap.appendChild(table);
-    container.appendChild(wrap);
-    tableRows=[];
-  }
-  function flushAll(){flushParagraph();flushList();flushTable();}
-  function stripCell(value){return value.trim().replace(/^\*\*|\*\*$/g,"");}
-
-  for(let i=0;i<lines.length;i++){
-    const original=lines[i],line=original.trim();
-    if(!line){flushParagraph();flushList();flushTable();continue;}
-
-    if(/^\s*\|.*\|\s*$/.test(original)){
-      flushParagraph();flushList();
-      const cells=line.split("|").slice(1,-1).map(stripCell);
-      if(cells.every(cell=>/^:?-{3,}:?$/.test(cell)))continue;
-      tableRows.push(cells);
-      continue;
+  let solar;
+  let lunar;
+  if(calendar==="solar"){
+    let hour=12,minute=0;
+    if(!unknown){[hour,minute]=timeValue.split(":").map(Number);}
+    solar=Solar.fromYmdHms(y,m,d,hour,minute,0);
+    lunar=solar.getLunar();
+  }else{
+    const lunarMonth=isLeap?-m:m;
+    lunar=Lunar.fromYmd(y,lunarMonth,d);
+    solar=lunar.getSolar();
+    if(!unknown){
+      const [hour,minute]=timeValue.split(":").map(Number);
+      solar=Solar.fromYmdHms(solar.getYear(),solar.getMonth(),solar.getDay(),hour,minute,0);
+      lunar=solar.getLunar();
     }
-    flushTable();
-
-    const headingMatch=line.match(/^(#{1,3})\s*(.+)$/);
-    if(headingMatch){
-      flushAll();
-      const heading=document.createElement(headingMatch[1].length===1?"h2":"h3");
-      heading.className=headingMatch[1].length===1?"report-heading":"report-subheading";
-      classifyHeading(heading,headingMatch[2]);
-      appendInlineText(heading,headingMatch[2]);
-      container.appendChild(heading);
-      continue;
-    }
-
-    const boldHeading=line.match(/^\*\*(.+)\*\*$/);
-    if(boldHeading){
-      flushAll();
-      const heading=document.createElement("h3");
-      heading.className="report-subheading";
-      classifyHeading(heading,boldHeading[1]);
-      heading.textContent=boldHeading[1];
-      container.appendChild(heading);
-      continue;
-    }
-
-    if(/^[-*_]{3,}$/.test(line)){flushAll();continue;}
-
-    const bulletMatch=line.match(/^[-*•]\s+(.+)$/);
-    if(bulletMatch){
-      flushParagraph();
-      if(!listElement||listElement.tagName!=="UL"){
-        listElement=document.createElement("ul");
-        container.appendChild(listElement);
-      }
-      const li=document.createElement("li");
-      appendInlineText(li,bulletMatch[1]);
-      listElement.appendChild(li);
-      continue;
-    }
-
-    const numberedMatch=line.match(/^\d+[.)]\s+(.+)$/);
-    if(numberedMatch){
-      flushParagraph();
-      if(!listElement||listElement.tagName!=="OL"){
-        listElement=document.createElement("ol");
-        container.appendChild(listElement);
-      }
-      const li=document.createElement("li");
-      appendInlineText(li,numberedMatch[1]);
-      listElement.appendChild(li);
-      continue;
-    }
-
-    const quoteMatch=line.match(/^>\s*(.+)$/);
-    if(quoteMatch){
-      flushParagraph();flushList();
-      const quote=document.createElement("blockquote");
-      appendInlineText(quote,quoteMatch[1]);
-      container.appendChild(quote);
-      continue;
-    }
-    flushList();
-    paragraph.push(line);
   }
-  flushAll();
-  if(!container.childNodes.length){
-    const p=document.createElement("p");
-    p.textContent="표시할 풀이 내용이 없습니다.";
-    container.appendChild(p);
-  }
-}
 
-async function requestInterpretation(mode){
-  if(!currentChart){
-    showStatus("먼저 사주 원국을 확인해 주세요.",true,"aiStatus");
-    return;
+  let adjustedHour=12,adjustedMinute=0;
+  if(!unknown){
+    [adjustedHour,adjustedMinute]=timeValue.split(":").map(Number);
+    let total=adjustedHour*60+adjustedMinute;
+    const place=document.getElementById("birthPlace").value.trim()||"대한민국";
+    const isKorea=/대한민국|한국|서울|부산|대구|인천|광주|대전|울산|세종|제주/i.test(place);
+    if(isKorea){
+      total-=32;
+      const dateKey=dateValue;
+      if((dateKey>="1987-05-10"&&dateKey<="1987-10-11")||(dateKey>="1988-05-08"&&dateKey<="1988-10-09"))total-=60;
+    }
+    total=(total+1440)%1440;
+    adjustedHour=Math.floor(total/60);
+    adjustedMinute=total%60;
   }
-  currentMode=mode;
-  hideStatus("aiStatus");
-  const buttons=document.querySelectorAll(".action-panel button");
-  buttons.forEach(button=>button.disabled=true);
-  showStatus("명리학 자료를 바탕으로 AI가 풀이를 작성하고 있습니다. 잠시 기다려 주세요.","","aiStatus");
 
-  const modeNames={
-    full:"종합 사주 분석",
-    today:"오늘의 운세",
-    wealth:"재물·직업운",
-    love:"애정·결혼운",
-    year2027:"2027년 운세"
+  const chartSolar=unknown
+   ? Solar.fromYmdHms(solar.getYear(),solar.getMonth(),solar.getDay(),12,0,0)
+   : Solar.fromYmdHms(solar.getYear(),solar.getMonth(),solar.getDay(),adjustedHour,adjustedMinute,0);
+  const chartLunar=chartSolar.getLunar();
+  const eight=chartLunar.getEightChar();
+  const p={
+    year:{gan:eight.getYearGan(),zhi:eight.getYearZhi()},
+    month:{gan:eight.getMonthGan(),zhi:eight.getMonthZhi()},
+    day:{gan:eight.getDayGan(),zhi:eight.getDayZhi()},
+    time:unknown?{gan:"미상",zhi:"미상"}:{gan:eight.getTimeGan(),zhi:eight.getTimeZhi()}
   };
+  const pillars=[p.year,p.month,p.day,p.time];
+  const elementCount={목:0,화:0,토:0,금:0,수:0};
+  pillars.forEach(item=>[item.gan,item.zhi].forEach(char=>{const el=getElement(char);if(elementCount[el]!==undefined)elementCount[el]++;}));
 
+  let daewoon=[];
   try{
-    const response=await fetch("/api/interpret",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({chart:currentChart,mode:mode})
-    });
-    const raw=await response.text();
-    let data;
-    try{data=JSON.parse(raw);}
-    catch(e){throw new Error("서버 응답을 읽을 수 없습니다. API 응답 형식을 확인해 주세요.");}
-    if(!response.ok)throw new Error(data.error||data.message||"AI 풀이 요청에 실패했습니다. ("+response.status+")");
+    const yun=eight.getYun(document.getElementById("gender").value==="male"?1:0,2);
+    const list=yun.getDaYun(10)||[];
+    daewoon=list.map(item=>({
+      startAge:item.getStartAge?.()??null,
+      endAge:item.getEndAge?.()??null,
+      startYear:item.getStartYear?.()??null,
+      endYear:item.getEndYear?.()??null,
+      ganZhi:item.getGanZhi?.()??""
+    }));
+  }catch(e){daewoon=[];}
 
-    const interpretation=data.interpretation||data.text||data.result;
-    if(!interpretation)throw new Error("AI 풀이 내용이 비어 있습니다. API 응답을 확인해 주세요.");
+  const birthSolar=`${solar.getYear()}-${String(solar.getMonth()).padStart(2,"0")}-${String(solar.getDay()).padStart(2,"0")}`;
+  const birthLunar=`${lunar.getYear()}년 ${Math.abs(lunar.getMonth())}월 ${lunar.getDay()}일${lunar.getMonth()<0?" (윤달)":""}`;
+  const birthTime=unknown?"출생 시각 미상":`${timeValue} (한국 출생 보정 적용 시 ${String(adjustedHour).padStart(2,"0")}:${String(adjustedMinute).padStart(2,"0")})`;
 
-    $("resultTitle").textContent=data.title||modeNames[mode];
-    $("resultSubtitle").textContent=currentChart.name+" 님 · "+currentChart.solarDate+" · "+modeNames[mode];
-    renderInterpretation(interpretation);
-    $("resultSection").style.display="block";
-    $("aiStatus").style.display="none";
-    $("resultSection").scrollIntoView({behavior:"smooth",block:"start"});
-  }catch(error){
-    showStatus(error.message||"AI 풀이 중 오류가 발생했습니다.",true,"aiStatus");
-  }finally{
-    buttons.forEach(button=>button.disabled=false);
-  }
+  currentChart={
+    name:document.getElementById("personName").value.trim()||"이름 미입력",
+    gender:document.getElementById("gender").value==="male"?"남성":"여성",
+    maritalStatus:document.getElementById("maritalStatus").value,
+    calendar:calendar==="solar"?"양력":"음력",
+    solarDate:birthSolar,
+    lunarDate:birthLunar,
+    zodiac:chartLunar.getYearShengXiao?.()||"미상",
+    birthHour:birthTime,
+    hasBirthHour:!unknown,
+    place:document.getElementById("birthPlace").value.trim()||"대한민국",
+    pillars:p,
+    daewoon:daewoon,
+    elementCount:elementCount,
+    calculationNotes:[
+      "연주는 입춘 기준 만세력 결과를 사용합니다.",
+      "월주는 절기 기준 만세력 결과를 사용합니다.",
+      unknown?"출생 시각을 모르는 상태이므로 시주는 미상으로 처리했습니다.":"한국 출생 시각은 32분 보정 및 해당 서머타임 기간 보정을 적용했습니다.",
+      "출생 시각 미상인 경우 대운과 시기 해석의 정확도가 낮아질 수 있습니다."
+    ]
+  };
+  document.getElementById("result").style.display="block";
+  document.getElementById("resultTitle").textContent=currentChart.name+"님의 사주 원국";
+  document.getElementById("birthSummary").textContent=`양력 ${birthSolar} · 음력 ${birthLunar} · ${currentChart.gender} · ${currentChart.maritalStatus}`;
+  document.getElementById("pillars").innerHTML=pillars.map((item,i)=>{
+    const names=["년주","월주","일주","시주"];
+    return `<div class="pillar"><b>${names[i]}</b><strong>${item.gan}${item.zhi}</strong><small>${item.gan==="미상"?"출생 시각 미상":getElement(item.gan)+" · "+getElement(item.zhi)}</small></div>`;
+  }).join("");
+  document.getElementById("interpretation").innerHTML="<p>사주 원국 계산이 완료되었습니다. 원하는 분석 항목을 선택해 주세요.</p>";
+  showStatus("사주 원국 계산이 완료되었습니다.");
+  document.getElementById("result").scrollIntoView({behavior:"smooth",block:"start"});
+ }catch(error){
+  console.error(error);
+  showStatus("계산 중 오류가 발생했습니다. 생년월일과 음력 윤달 여부를 확인해 주세요. ("+error.message+")",true);
+ }
+}
+async function runAnalysis(mode){
+ if(!currentChart){showStatus("먼저 생년월일을 입력하고 사주 원국을 계산해 주세요.",true);return;}
+ const buttons=[...document.querySelectorAll(".report-actions button")];
+ buttons.forEach(button=>button.disabled=true);
+ const area=document.getElementById("interpretation");
+ area.innerHTML="<p>운명의 서재가 사주 원국을 분석하고 있습니다. 보고서가 완성될 때까지 잠시 기다려 주세요.</p>";
+ area.scrollIntoView({behavior:"smooth",block:"start"});
+ try{
+  const response=await fetch("/api/interpret",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({chart:currentChart,mode})
+  });
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||"AI 분석 요청에 실패했습니다.");
+  const text=data.interpretation||data.text||data.result;
+  if(!text)throw new Error("AI 응답 내용이 비어 있습니다.");
+  renderInterpretation(text);
+ }catch(error){
+  area.innerHTML="<p>분석 중 문제가 발생했습니다.</p><p>"+escapeHtml(error.message)+"</p><p>잠시 후 다시 시도해 주세요.</p>";
+ }finally{
+  buttons.forEach(button=>button.disabled=false);
+ }
+}
+function escapeHtml(value){
+ return String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+}
+function renderInterpretation(markdown){
+ const lines=String(markdown).replace(/\r/g,"").split("\n");
+ let html="",inList=false,inTable=false;
+ const closeList=()=>{if(inList){html+="</ul>";inList=false;}};
+ const closeTable=()=>{if(inTable){html+="</tbody></table>";inTable=false;}};
+ for(const raw of lines){
+  const line=raw.trim();
+  if(!line){closeList();continue;}
+  if(line.startsWith("|")&&line.endsWith("|")){
+   closeList();
+   const cells=line.split("|").slice(1,-1).map(x=>x.trim());
+   if(cells.every(x=>/^:?-{3,}:?$/.test(x)))continue;
+   if(!inTable){html+="<table><tbody>";inTable=true;}
+   const tag=html.includes("<tr>")?"td":"th";
+   html+="<tr>"+cells.map(c=>`<${tag}>${inlineFormat(c)}</${tag}>`).join("")+"</tr>";
+   continue;
+  }else closeTable();
+  if(/^###\s/.test(line)){closeList();html+="<h3>"+inlineFormat(line.replace(/^###\s/,""))+"</h3>";}
+  else if(/^##\s/.test(line)){closeList();html+="<h2>"+inlineFormat(line.replace(/^##\s/,""))+"</h2>";}
+  else if(/^#\s/.test(line)){closeList();html+="<h1>"+inlineFormat(line.replace(/^#\s/,""))+"</h1>";}
+  else if(/^[-*]\s/.test(line)){if(!inList){html+="<ul>";inList=true;}html+="<li>"+inlineFormat(line.replace(/^[-*]\s/,""))+"</li>";}
+  else if(line.startsWith(">")){closeList();html+="<blockquote>"+inlineFormat(line.replace(/^>\s?/,""))+"</blockquote>";}
+  else{closeList();html+="<p>"+inlineFormat(line)+"</p>";}
+ }
+ closeList();closeTable();
+ document.getElementById("interpretation").innerHTML=html;
+}
+function inlineFormat(text){
+ return escapeHtml(text)
+ .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+ .replace(/\*(.+?)\*/g,"<em>$1</em>")
+ .replace(/`(.+?)`/g,"<code>$1</code>");
 }
 function printReport(){
-  if(!$("resultSection").style.display||$("resultSection").style.display==="none"){
-    alert("먼저 AI 사주 풀이를 실행해 주세요.");
-    return;
-  }
-  window.print();
+ if(!currentChart){showStatus("먼저 사주 원국을 계산해 주세요.",true);return;}
+ window.print();
 }
-initDateSelectors();
+document.getElementById("timeUnknown").addEventListener("change",function(){
+ document.getElementById("birthTime").disabled=this.value==="yes";
+ if(this.value==="yes")document.getElementById("birthTime").value="";
+});
 </script>
 </body>
 </html>
