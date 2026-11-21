@@ -56,39 +56,304 @@ input,select{width:100%;padding:11px 10px;border:1px solid #dcdfe5;border-radius
 <p class="notice">운세는 전통 명리학에 기반한 참고용 콘텐츠이며 미래를 확정적으로 예측하지 않습니다. 의료·법률·투자 등 중요한 결정은 전문가의 조언과 객관적인 정보를 바탕으로 판단하세요.</p>
 </main>
 <script>
-const $=id=>document.getElementById(id);
-for(let m=1;m<=12;m++)$('month').add(new Option(m+'월',m));
-for(let d=1;d<=31;d++)$('day').add(new Option(d+'일',d));
-$('year').value=new Date().getFullYear()-30;$('month').value=1;$('day').value=1;
 
-let chart=null, mode='full';
-document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===b));}));
-function pillarCard(label,value){return `<div class="pillar"><span>${label}</span><b>${value}</b></div>`;}
-$('birthForm').addEventListener('submit',e=>{
- e.preventDefault();
- try{
-  const y=Number($('year').value),m=Number($('month').value),d=Number($('day').value),h=Number($('hour').value);
-  if(!y||y<1900||y>2100)throw Error('1900~2100년 사이의 연도를 입력해 주세요.');
-  let solar;
-  if($('calendar').value==='solar'){solar=Solar.fromYmdHms(y,m,d,h<0?12:h,0,0);}
-  else {const lunar=Lunar.fromYmd(y,m,d);solar=lunar.getSolar();}
-  const lunarDate=solar.getLunar(), eight=lunarDate.getEightChar();
-  const pillars={year:eight.getYear(),month:eight.getMonth(),day:eight.getDay(),time:h<0?'시간 미상':eight.getTime()};
-  const name=$('name').value.trim()||'방문자';
-  chart={name,gender:$('gender').value,calendar:$('calendar').value,solarDate:solar.toYmd(),lunarDate:lunarDate.toString(),zodiac:lunarDate.getYearShengXiao(),pillars,place:$('place').value.trim()||'미입력',birthHour:h<0?'모름':String(h)};
-  $('result').innerHTML=`<h3>${name}님의 사주 원국</h3><p class="muted">${chart.solarDate} · ${chart.gender} · ${chart.zodiac}띠</p><div class="pillars">${pillarCard('년주',pillars.year)}${pillarCard('월주',pillars.month)}${pillarCard('일주',pillars.day)}${pillarCard('시주',pillars.time)}</div><p class="muted">음력 환산: ${chart.lunarDate}</p><p class="muted">사주 원국 계산이 완료됐습니다. 아래에서 원하는 AI 풀이를 선택하세요.</p>`;
-  $('actions').style.display='flex';$('aiBtn').style.display='block';$('airesult').style.display='none';$('status').textContent='';
- }catch(err){alert('입력정보를 확인해 주세요. '+err.message);}
+const $ = id => document.getElementById(id);
+
+for (let m = 1; m <= 12; m++) {
+  $('month').add(new Option(m + '월', m));
+}
+for (let d = 1; d <= 31; d++) {
+  $('day').add(new Option(d + '일', d));
+}
+
+$('year').value = new Date().getFullYear() - 30;
+$('month').value = 1;
+$('day').value = 1;
+
+let chart = null;
+let mode = 'full';
+
+document.querySelectorAll('[data-mode]').forEach(b => {
+  b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('[data-mode]').forEach(x => {
+      x.classList.toggle('active', x === b);
+    });
+  });
 });
-$('aiBtn').addEventListener('click',async()=>{
- if(!chart)return;
- const btn=$('aiBtn');btn.disabled=true;btn.textContent='풀이 생성 중...';$('status').textContent='AI가 계산된 사주 정보를 바탕으로 풀이를 작성하고 있습니다.';
- try{
-  const r=await fetch('/api/interpret',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chart,mode})});
-  const data=await r.json();if(!r.ok)throw Error(data.error||'AI 풀이 요청에 실패했습니다.');
-  $('aiTitle').textContent=data.title||'AI 사주 풀이';$('aiText').textContent=data.interpretation||'결과가 비어 있습니다.';$('airesult').style.display='block';$('status').textContent='풀이가 완성됐습니다. 인쇄 버튼에서 PDF로 저장할 수 있습니다.';
- }catch(err){$('status').textContent=err.message.includes('Failed to fetch')?'AI 서버가 아직 배포되지 않았습니다. 웹사이트를 Vercel에 배포하고 API 키를 설정한 뒤 사용할 수 있습니다.':err.message;}
- finally{btn.disabled=false;btn.textContent='AI 풀이 생성하기';}
+
+function pillarCard(label, value) {
+  return `<div class="pillar">
+    <span>${label}</span>
+    <b>${value}</b>
+  </div>`;
+}
+
+// 대운 계산
+function calculateDaewoon(eight, gender, birthYear) {
+  if (gender === '선택 안 함') {
+    return {
+      available: false,
+      reason: '성별을 선택해야 대운의 순행·역행을 판정할 수 있습니다.',
+      list: []
+    };
+  }
+
+  const genderCode = gender === '남성' ? 1 : 0;
+
+  // 2는 라이브러리의 절기 기준 계산 방식
+  const yun = eight.getYun(genderCode, 2);
+
+  const startSolar = yun.getStartSolar();
+
+  const list = yun.getDaYun(10).map(d => ({
+    startYear: d.getStartYear(),
+    endYear: d.getEndYear(),
+    startAge: d.getStartAge(),
+    endAge: d.getEndAge(),
+    ganZhi: d.getGanZhi(),
+    liuNian: d.getLiuNian(10).map(n => ({
+      year: n.getYear(),
+      age: n.getAge(),
+      ganZhi: n.getGanZhi()
+    }))
+  }));
+
+  return {
+    available: true,
+    direction: yun.isForward() ? '순행' : '역행',
+    startAge: yun.getStartYear(),
+    startDate: startSolar.toYmd(),
+    list
+  };
+}
+
+// 세운 계산
+function calculateSewoon(daewoon, startYear) {
+  const currentYear = new Date().getFullYear();
+  const targetYears = [];
+
+  // 올해부터 10년간 세운
+  for (let year = currentYear; year < currentYear + 10; year++) {
+    let found = null;
+
+    if (daewoon.available) {
+      for (const bigLuck of daewoon.list) {
+        found = bigLuck.liuNian.find(n => n.year === year);
+        if (found) break;
+      }
+    }
+
+    // 대운에 포함되지 않은 연도도 연도 간지를 계산
+    const lunar = Solar.fromYmd(year, 7, 1).getLunar();
+
+    targetYears.push({
+      year,
+      ganZhi: found
+        ? found.ganZhi
+        : lunar.getYearInGanZhiExact(),
+      age: found ? found.age : year - startYear + 1
+    });
+  }
+
+  return targetYears;
+}
+
+$('birthForm').addEventListener('submit', e => {
+  e.preventDefault();
+
+  try {
+    const y = Number($('year').value);
+    const m = Number($('month').value);
+    const d = Number($('day').value);
+    const h = Number($('hour').value);
+
+    if (!y || y < 1900 || y > 2100) {
+      throw Error('1900~2100년 사이의 연도를 입력해 주세요.');
+    }
+
+    let solar;
+
+    if ($('calendar').value === 'solar') {
+      solar = Solar.fromYmdHms(
+        y, m, d,
+        h < 0 ? 12 : h,
+        0, 0
+      );
+    } else {
+      const lunar = Lunar.fromYmd(y, m, d);
+      solar = lunar.getSolar();
+    }
+
+    const lunarDate = solar.getLunar();
+    const eight = lunarDate.getEightChar();
+
+    const pillars = {
+      year: eight.getYear(),
+      month: eight.getMonth(),
+      day: eight.getDay(),
+      time: h < 0 ? '시간 미상' : eight.getTime()
+    };
+
+    const name = $('name').value.trim() || '방문자';
+    const gender = $('gender').value;
+
+    // 대운 계산 실행
+    const daewoon = calculateDaewoon(
+      eight,
+      gender,
+      solar.getYear()
+    );
+
+    // 세운 계산 실행
+    const sewoon = calculateSewoon(
+      daewoon,
+      solar.getYear()
+    );
+
+    chart = {
+      name,
+      gender,
+      calendar: $('calendar').value,
+      solarDate: solar.toYmd(),
+      lunarDate: lunarDate.toString(),
+      zodiac: lunarDate.getYearShengXiao(),
+      pillars,
+      place: $('place').value.trim() || '미입력',
+      birthHour: h < 0 ? '모름' : String(h),
+
+      // AI 서버에 전달할 대운 데이터
+      daewoon,
+
+      // AI 서버에 전달할 세운 데이터
+      sewoon
+    };
+
+    let daewoonHTML = '';
+
+    if (daewoon.available) {
+      daewoonHTML = `
+        <h4>대운 계산 결과</h4>
+        <p class="muted">
+          진행 방향: ${daewoon.direction}<br>
+          대운 시작 시점: ${daewoon.startDate}<br>
+          대운 시작 나이: 약 ${daewoon.startAge}세
+        </p>
+        <div style="line-height:2;font-size:13px">
+          ${daewoon.list.map(item => `
+            <div>
+              ${item.startYear}~${item.endYear}년
+              (${item.startAge}~${item.endAge}세)
+              <b>${item.ganZhi}</b>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      daewoonHTML = `
+        <h4>대운 계산 안내</h4>
+        <p class="muted">${daewoon.reason}</p>
+      `;
+    }
+
+    const sewoonHTML = `
+      <h4>연도별 세운</h4>
+      <div style="line-height:2;font-size:13px">
+        ${sewoon.map(item => `
+          <div>
+            ${item.year}년
+            <b>${item.ganZhi}</b>
+            <span class="muted">(${item.age}세)</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    $('result').innerHTML = `
+      <h3>${name}님의 사주 원국</h3>
+      <p class="muted">
+        ${chart.solarDate} · ${gender} · ${chart.zodiac}띠
+      </p>
+
+      <div class="pillars">
+        ${pillarCard('년주', pillars.year)}
+        ${pillarCard('월주', pillars.month)}
+        ${pillarCard('일주', pillars.day)}
+        ${pillarCard('시주', pillars.time)}
+      </div>
+
+      <p class="muted">음력 환산: ${chart.lunarDate}</p>
+
+      <hr>
+      ${daewoonHTML}
+      <hr>
+      ${sewoonHTML}
+
+      <p class="muted">
+        대운·세운 계산이 완료됐습니다.
+        아래에서 AI 상세 풀이를 진행하세요.
+      </p>
+    `;
+
+    $('actions').style.display = 'flex';
+    $('aiBtn').style.display = 'block';
+    $('airesult').style.display = 'none';
+    $('status').textContent = '';
+
+  } catch (err) {
+    alert('입력정보를 확인해 주세요. ' + err.message);
+    console.error(err);
+  }
 });
+
+$('aiBtn').addEventListener('click', async () => {
+  if (!chart) return;
+
+  const btn = $('aiBtn');
+  btn.disabled = true;
+  btn.textContent = '풀이 생성 중...';
+
+  $('status').textContent =
+    '대운과 세운을 포함한 상세 사주 풀이를 작성하고 있습니다.';
+
+  try {
+    const r = await fetch('/api/interpret', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        chart,
+        mode
+      })
+    });
+
+    const data = await r.json();
+
+    if (!r.ok) {
+      throw Error(data.error || 'AI 풀이 요청에 실패했습니다.');
+    }
+
+    $('aiTitle').textContent =
+      data.title || 'AI 사주 풀이';
+
+    $('aiText').textContent =
+      data.interpretation || '결과가 비어 있습니다.';
+
+    $('airesult').style.display = 'block';
+
+    $('status').textContent =
+      '대운·세운이 반영된 풀이가 완성됐습니다.';
+
+  } catch (err) {
+    $('status').textContent = err.message;
+    console.error(err);
+
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'AI 풀이 생성하기';
+  }
+});
+
 </script>
 </body></html>
