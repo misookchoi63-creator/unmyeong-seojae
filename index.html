@@ -804,7 +804,7 @@ $('birthForm').addEventListener('submit', e => {
     );
 
     // AI 서버로 전달할 전체 사주 자료
-    chart = {
+    chart = {relationAnalysis: analyzeRelations(pillars, daewoon, sewoon),
       name,
       gender,
       maritalStatus,
