@@ -54,7 +54,22 @@ button:disabled{opacity:.55;cursor:wait}
 .report-actions button{flex:1;min-width:120px}
 footer{text-align:center;color:#8a8a80;font-size:11px;padding:20px}
 @media(max-width:560px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.panel{padding:16px}.actions{grid-template-columns:1fr 1fr}header h1{font-size:25px}.pillars{gap:4px}.pillar strong{font-size:21px}}
-@media print{body{background:#fff;color:#111}header,.input-area,.report-actions,footer,.no-print{display:none!important}main{max-width:none;margin:0;padding:0}.panel{border:0;box-shadow:none;padding:0;margin:0}#result{display:block!important}#interpretation{font-size:12pt;line-height:1.85}#interpretation h2{break-after:avoid}#interpretation table{break-inside:avoid}}
+@media print{
+ @page{size:A4;margin:17mm 15mm}
+ body{background:#fff;color:#111}
+ header,.input-area,.report-actions,footer,.no-print{display:none!important}
+ main{max-width:none;margin:0;padding:0}
+ .panel{border:0;box-shadow:none;padding:0;margin:0}
+ #result{display:block!important}
+ #interpretation{font-size:11.5pt;line-height:1.8;overflow:visible}
+ #interpretation h1{font-size:19pt;break-after:avoid}
+ #interpretation h2{font-size:15pt;break-after:avoid;margin-top:22px}
+ #interpretation h3{font-size:13pt;break-after:avoid}
+ #interpretation p,#interpretation li{orphans:3;widows:3}
+ #interpretation table{width:100%;font-size:9pt;break-inside:auto}
+ #interpretation tr{break-inside:avoid}
+ #interpretation th{background:#eee!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -97,14 +112,31 @@ footer{text-align:center;color:#8a8a80;font-size:11px;padding:20px}
 <script>
 let currentChart = null;
 
+const STEMS = ["갑","을","병","정","무","기","경","신","임","계"];
+const BRANCHES = ["자","축","인","묘","진","사","오","미","신","유","술","해"];
+const STEM_ELEMENT = {
+ "갑":"목","을":"목","병":"화","정":"화","무":"토",
+ "기":"토","경":"금","신":"금","임":"수","계":"수"
+};
+const BRANCH_ELEMENT = {
+ "자":"수","축":"토","인":"목","묘":"목","진":"토","사":"화",
+ "오":"화","미":"토","신":"금","유":"금","술":"토","해":"수"
+};
+const YANG_STEMS = new Set(["갑","병","무","경","임"]);
+const ELEMENT_GENERATES = {목:"화",화:"토",토:"금",금:"수",수:"목"};
+const ELEMENT_CONTROLS = {목:"토",화:"금",토:"수",금:"목",수:"화"};
+
 function showStatus(message,isError=false){
  const box=document.getElementById("status");
- box.style.display="block";box.textContent=message;
+ box.style.display="block";
+ box.textContent=message;
  box.style.background=isError?"#fff0ed":"#f2f5f1";
  box.style.color=isError?"#9b3426":"#315744";
 }
 function resetForm(){
- document.querySelectorAll(".input-area input").forEach(el=>{el.value=el.id==="birthPlace"?"대한민국":"";});
+ document.querySelectorAll(".input-area input").forEach(el=>{
+  el.value=el.id==="birthPlace"?"대한민국":"";
+ });
  document.getElementById("gender").value="female";
  document.getElementById("calendarType").value="solar";
  document.getElementById("leapMonth").value="no";
@@ -116,60 +148,210 @@ function resetForm(){
  currentChart=null;
 }
 function getElement(char){
- const map={"갑":"목","을":"목","인":"목","묘":"목","병":"화","정":"화","사":"화","오":"화","무":"토","기":"토","진":"토","술":"토","축":"토","미":"토","경":"금","신":"금","유":"금","임":"수","계":"수","해":"수","자":"수"};
- return map[char]||"미상";
+ return STEM_ELEMENT[char] || BRANCH_ELEMENT[char] || "미상";
+}
+function getPolarity(stem){
+ if(!STEMS.includes(stem)) return "미상";
+ return YANG_STEMS.has(stem) ? "양" : "음";
+}
+function getTenGod(dayStem,targetStem){
+ if(!STEMS.includes(dayStem)||!STEMS.includes(targetStem)) return "자료 없음";
+ const dayElement=STEM_ELEMENT[dayStem];
+ const targetElement=STEM_ELEMENT[targetStem];
+ const samePolarity=getPolarity(dayStem)===getPolarity(targetStem);
+
+ if(dayElement===targetElement) return samePolarity?"비견":"겁재";
+ if(ELEMENT_GENERATES[dayElement]===targetElement) return samePolarity?"식신":"상관";
+ if(ELEMENT_CONTROLS[dayElement]===targetElement) return samePolarity?"편재":"정재";
+ if(ELEMENT_CONTROLS[targetElement]===dayElement) return samePolarity?"편관":"정관";
+ if(ELEMENT_GENERATES[targetElement]===dayElement) return samePolarity?"편인":"정인";
+ return "자료 없음";
 }
 function formatDate(solar){
  return solar.getYear()+"-"+String(solar.getMonth()).padStart(2,"0")+"-"+String(solar.getDay()).padStart(2,"0");
 }
 function safeCall(object,method,fallback=null){
- try{return typeof object?.[method]==="function"?object[method]():fallback;}catch{return fallback;}
+ try{
+  return typeof object?.[method]==="function" ? object[method]() : fallback;
+ }catch{
+  return fallback;
+ }
 }
-function getPillarDetail(eight, key, label, gan, zhi){
- const hide=safeCall(eight,`get${key}HideGan`,[])||[];
+function getPillarDetail(eight,key,label,gan,zhi,dayStem){
+ if(gan==="미상"||zhi==="미상"){
+  return {
+   기둥:label,천간:"미상",지지:"미상",천간오행:"미상",지지오행:"미상",
+   천간음양:"미상",천간십성:"판단 불가",지장간:[],지장간십성:[],
+   지장간상세:[],십이운성:"판단 불가",납음:"자료 없음"
+  };
+ }
+ const hidden=safeCall(eight,`get${key}HideGan`,[])||[];
  const hiddenGods=safeCall(eight,`get${key}ShiShenZhi`,[])||[];
- const stemGod=key==="Day"?"일주":safeCall(eight,`get${key}ShiShenGan`,"자료 없음");
+ const stemGod=key==="Day"?"일간":safeCall(eight,`get${key}ShiShenGan`,"자료 없음");
+ const hiddenDetails=(Array.isArray(hidden)?hidden:[]).map((stem,index)=>({
+  순서:index===0?"주기":index===1?"중기":"여기",
+  천간:stem,
+  오행:getElement(stem),
+  십성:getTenGod(dayStem,stem)
+ }));
  return {
-  기둥:label, 천간:gan, 지지:zhi, 천간오행:getElement(gan), 지지오행:getElement(zhi),
-  천간십성:stemGod, 지장간:Array.isArray(hide)?hide:[], 지장간십성:Array.isArray(hiddenGods)?hiddenGods:[]
+  기둥:label,
+  천간:gan,
+  지지:zhi,
+  천간오행:getElement(gan),
+  지지오행:getElement(zhi),
+  천간음양:getPolarity(gan),
+  천간십성:stemGod,
+  지장간:Array.isArray(hidden)?hidden:[],
+  지장간십성:Array.isArray(hiddenGods)?hiddenGods:[],
+  지장간상세:hiddenDetails,
+  십이운성:safeCall(eight,`get${key}DiShi`,"자료 없음"),
+  납음:safeCall(eight,`get${key}NaYin`,"자료 없음")
  };
 }
-function getStorageInfo(pillarDetails, hasTime){
+function getStorageInfo(pillarDetails,hasTime){
  const storageBranches=["진","술","축","미"];
  const names={"진":"진(辰)","술":"술(戌)","축":"축(丑)","미":"미(未)"};
- return pillarDetails.filter((p,index)=>hasTime||index!==3)
+ return pillarDetails
+  .filter((p,index)=>hasTime||index!==3)
   .filter(p=>storageBranches.includes(p.지지))
   .map(p=>({
-   위치:p.기둥, 지지:p.지지, 창고명:names[p.지지],
-   지장간:p.지장간, 지장간십성:p.지장간십성,
+   위치:p.기둥,
+   지지:p.지지,
+   창고명:names[p.지지],
+   지장간:p.지장간,
+   지장간십성:p.지장간십성,
+   지장간상세:p.지장간상세,
    재성포함여부:p.지장간십성.some(x=>x==="정재"||x==="편재")
   }));
 }
-function buildAnnualFlow(startYear,endYear){
+function enrichGanZhi(ganZhi,dayStem){
+ const chars=String(ganZhi||"").split("");
+ const gan=chars[0]||"";
+ const zhi=chars[1]||"";
+ return {
+  ganZhi:ganZhi||"자료 없음",
+  gan,
+  zhi,
+  ganElement:getElement(gan),
+  zhiElement:getElement(zhi),
+  ganPolarity:getPolarity(gan),
+  stemTenGod:getTenGod(dayStem,gan),
+  branchHiddenGan:[],
+  branchHiddenTenGods:[]
+ };
+}
+function buildAnnualFlow(startYear,endYear,dayStem){
  const result=[];
  for(let year=startYear;year<=endYear;year++){
   try{
    const lunar=Solar.fromYmdHms(year,7,1,12,0,0).getLunar();
    const ec=lunar.getEightChar();
-   result.push({year,ganZhi:safeCall(ec,"getYear",""),monthReference:"7월 1일 기준 연주 확인"});
-  }catch(error){result.push({year,ganZhi:"",note:"계산 실패"});}
+   const item=enrichGanZhi(safeCall(ec,"getYear",""),dayStem);
+   const hidden=safeCall(ec,"getYearHideGan",[])||[];
+   const gods=safeCall(ec,"getYearShiShenZhi",[])||[];
+   item.year=year;
+   item.branchHiddenGan=hidden;
+   item.branchHiddenTenGods=gods;
+   item.referenceDate=`${year}-07-01`;
+   item.note="입춘 이후인 7월 1일의 연주를 해당 연도의 대표값으로 사용";
+   result.push(item);
+  }catch(error){
+   result.push({year,ganZhi:"계산 실패",note:"연운 계산 실패"});
+  }
  }
  return result;
 }
-function buildMonthlyFlow(year){
+function buildMonthlyFlow(year,dayStem){
  const result=[];
  for(let month=1;month<=12;month++){
   try{
    const solar=Solar.fromYmdHms(year,month,15,12,0,0);
    const ec=solar.getLunar().getEightChar();
-   result.push({year,month,ganZhi:safeCall(ec,"getMonth",""),referenceDate:`${year}-${String(month).padStart(2,"0")}-15`,note:"매월 15일 대표값이며 절입일 전후에는 월주가 달라질 수 있음"});
-  }catch(error){result.push({year,month,ganZhi:"",note:"계산 실패"});}
+   const item=enrichGanZhi(safeCall(ec,"getMonth",""),dayStem);
+   const hidden=safeCall(ec,"getMonthHideGan",[])||[];
+   const gods=safeCall(ec,"getMonthShiShenZhi",[])||[];
+   item.year=year;
+   item.month=month;
+   item.branchHiddenGan=hidden;
+   item.branchHiddenTenGods=gods;
+   item.referenceDate=`${year}-${String(month).padStart(2,"0")}-15`;
+   item.note="매월 15일 대표값이며 절입일 전후에는 월주가 달라질 수 있음";
+   result.push(item);
+  }catch(error){
+   result.push({year,month,ganZhi:"계산 실패",note:"월운 계산 실패"});
+  }
  }
  return result;
 }
+function buildTodayFlow(dayStem){
+ const now=new Date();
+ const y=now.getFullYear(),m=now.getMonth()+1,d=now.getDate();
+ const solar=Solar.fromYmdHms(y,m,d,12,0,0);
+ const lunar=solar.getLunar();
+ const ec=lunar.getEightChar();
+ const dayGanZhi=safeCall(ec,"getDay","");
+ const dayData=enrichGanZhi(dayGanZhi,dayStem);
+ const dayPillar=ec;
+ const hidden=safeCall(dayPillar,"getDayHideGan",[])||[];
+ const hiddenGods=safeCall(dayPillar,"getDayShiShenZhi",[])||[];
+ return {
+  date:`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`,
+  lunarDate:`${lunar.getYear()}년 ${Math.abs(lunar.getMonth())}월 ${lunar.getDay()}일`,
+  yearGanZhi:safeCall(ec,"getYear",""),
+  monthGanZhi:safeCall(ec,"getMonth",""),
+  dayGanZhi,
+  dayStemTenGod:getTenGod(dayStem,dayData.gan),
+  dayBranchHiddenGan:hidden,
+  dayBranchHiddenTenGods:hiddenGods,
+  note:"기기 현지 날짜를 기준으로 계산한 당일 일진입니다."
+ };
+}
+function buildDayMasterAnalysis(dayStem,pillarDetails,monthSeason){
+ const dayElement=getElement(dayStem);
+ const sameElementVisibleStems=[];
+ const sameElementHiddenRoots=[];
+ const resourceElements=[];
+ const outputElements=[];
+ const wealthElements=[];
+ const officerElements=[];
+ pillarDetails.forEach(p=>{
+  if(p.천간!=="미상"&&getElement(p.천간)===dayElement){
+   sameElementVisibleStems.push({위치:p.기둥,천간:p.천간,구분:p.기둥==="일주"?"일간 자체":"천간"});
+  }
+  (p.지장간상세||[]).forEach(h=>{
+   if(h.오행===dayElement){
+    sameElementHiddenRoots.push({위치:p.기둥,천간:h.천간,구분:h.순서+" 지장간"});
+   }
+  });
+ });
+ for(const el of ["목","화","토","금","수"]){
+  if(ELEMENT_GENERATES[el]===dayElement) resourceElements.push(el);
+  if(ELEMENT_GENERATES[dayElement]===el) outputElements.push(el);
+  if(ELEMENT_CONTROLS[dayElement]===el) wealthElements.push(el);
+  if(ELEMENT_CONTROLS[el]===dayElement) officerElements.push(el);
+ }
+ return {
+  일간:dayStem,
+  오행:dayElement,
+  음양:getPolarity(dayStem),
+  월령:monthSeason.월지||"미상",
+  월령오행:monthSeason.월지오행||"미상",
+  같은오행의천간위치:sameElementVisibleStems,
+  일간과같은오행의지장간뿌리:sameElementHiddenRoots,
+  일간을생하는오행:[...new Set(resourceElements)],
+  일간이생하는오행:[...new Set(outputElements)],
+  일간이극하는오행:[...new Set(wealthElements)],
+  일간을극하는오행:[...new Set(officerElements)],
+  판단주의:"이 자료는 강약 판단의 참고 구성요소이며, 이 항목만으로 신강·신약이나 용신을 자동 확정하지 않습니다."
+ };
+}
 function calculateSaju(){
  try{
-  if(!window.Lunar||!window.Solar){showStatus("만세력 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.",true);return;}
+  if(!window.Lunar||!window.Solar){
+   showStatus("만세력 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.",true);
+   return;
+  }
   const dateValue=document.getElementById("birthDate").value;
   if(!dateValue){showStatus("생년월일을 입력해 주세요.",true);return;}
   const [y,m,d]=dateValue.split("-").map(Number);
@@ -177,12 +359,17 @@ function calculateSaju(){
   const isLeap=document.getElementById("leapMonth").value==="yes";
   const unknown=document.getElementById("timeUnknown").value==="yes";
   const timeValue=document.getElementById("birthTime").value;
-  if(!unknown&&!timeValue){showStatus("태어난 시각을 입력하거나 '모름'을 선택해 주세요.",true);return;}
+  if(!unknown&&!timeValue){
+   showStatus("태어난 시각을 입력하거나 '모름'을 선택해 주세요.",true);
+   return;
+  }
+
   let solar,lunar;
   if(calendar==="solar"){
    let hour=12,minute=0;
    if(!unknown)[hour,minute]=timeValue.split(":").map(Number);
-   solar=Solar.fromYmdHms(y,m,d,hour,minute,0);lunar=solar.getLunar();
+   solar=Solar.fromYmdHms(y,m,d,hour,minute,0);
+   lunar=solar.getLunar();
   }else{
    lunar=Lunar.fromYmd(y,isLeap?-m:m,d);
    if(!lunar){showStatus("입력한 음력 날짜를 확인해 주세요.",true);return;}
@@ -193,25 +380,36 @@ function calculateSaju(){
     lunar=solar.getLunar();
    }
   }
+
   let adjustedHour=12,adjustedMinute=0,chartSolar;
   if(!unknown){
    [adjustedHour,adjustedMinute]=timeValue.split(":").map(Number);
    let total=adjustedHour*60+adjustedMinute;
    const place=document.getElementById("birthPlace").value.trim()||"대한민국";
    const isKorea=/대한민국|한국|서울|부산|대구|인천|광주|대전|울산|세종|제주/i.test(place);
+   const solarBirthDate=formatDate(solar);
    if(isKorea){
     total-=32;
-    if((dateValue>="1987-05-10"&&dateValue<="1987-10-11")||(dateValue>="1988-05-08"&&dateValue<="1988-10-09"))total-=60;
+    if((solarBirthDate>="1987-05-10"&&solarBirthDate<="1987-10-11")||
+       (solarBirthDate>="1988-05-08"&&solarBirthDate<="1988-10-09")){
+     total-=60;
+    }
    }
    let dayOffset=0;
-   if(total<0){total+=1440;dayOffset=-1;}else if(total>=1440){total-=1440;dayOffset=1;}
-   adjustedHour=Math.floor(total/60);adjustedMinute=total%60;
+   if(total<0){total+=1440;dayOffset=-1;}
+   else if(total>=1440){total-=1440;dayOffset=1;}
+   adjustedHour=Math.floor(total/60);
+   adjustedMinute=total%60;
    const baseDate=Solar.fromYmd(solar.getYear(),solar.getMonth(),solar.getDay());
    const adjustedDate=baseDate.next(dayOffset);
-   chartSolar=Solar.fromYmdHms(adjustedDate.getYear(),adjustedDate.getMonth(),adjustedDate.getDay(),adjustedHour,adjustedMinute,0);
+   chartSolar=Solar.fromYmdHms(
+    adjustedDate.getYear(),adjustedDate.getMonth(),adjustedDate.getDay(),
+    adjustedHour,adjustedMinute,0
+   );
   }else{
    chartSolar=Solar.fromYmdHms(solar.getYear(),solar.getMonth(),solar.getDay(),12,0,0);
   }
+
   const chartLunar=chartSolar.getLunar();
   const eight=chartLunar.getEightChar();
   const p={
@@ -223,94 +421,178 @@ function calculateSaju(){
   const pillars=[p.year,p.month,p.day,p.time];
   const elementCount={목:0,화:0,토:0,금:0,수:0};
   pillars.forEach((item,index)=>{
-   [item.gan,item.zhi].forEach(char=>{const el=getElement(char);if(el!=="미상"&&(index!==3||!unknown))elementCount[el]++;});
+   [item.gan,item.zhi].forEach(char=>{
+    const el=getElement(char);
+    if(el!=="미상"&&(index!==3||!unknown))elementCount[el]++;
+   });
   });
 
   const pillarKeys=["Year","Month","Day","Time"];
   const pillarNames=["년주","월주","일주","시주"];
   const pillarDetails=pillarKeys.map((key,i)=>{
    if(i===3&&unknown){
-    return {기둥:"시주",천간:"미상",지지:"미상",천간오행:"미상",지지오행:"미상",천간십성:"판단 불가",지장간:[],지장간십성:[]};
+    return getPillarDetail(eight,key,pillarNames[i],"미상","미상",p.day.gan);
    }
-   return getPillarDetail(eight,key,pillarNames[i],pillars[i].gan,pillars[i].zhi);
+   return getPillarDetail(eight,key,pillarNames[i],pillars[i].gan,pillars[i].zhi,p.day.gan);
   });
+
   const dayMaster=p.day.gan;
   const dayMasterElement=getElement(dayMaster);
   const monthSeason={
    월주:p.month.gan+p.month.zhi,
+   월간:p.month.gan,
    월지:p.month.zhi,
+   월간오행:getElement(p.month.gan),
    월지오행:getElement(p.month.zhi),
    월령십성:safeCall(eight,"getMonthShiShenGan","자료 없음"),
-   일간십이운성:safeCall(eight,"getMonthDiShi","자료 없음")
+   월지십이운성:safeCall(eight,"getMonthDiShi","자료 없음"),
+   계절설명:"월지는 태어난 계절과 월령을 살피는 중심 자료입니다."
   };
+  const dayMasterAnalysis=buildDayMasterAnalysis(dayMaster,pillarDetails,monthSeason);
   const storageAnalysis=getStorageInfo(pillarDetails,!unknown);
 
-  let daewoon=[],annualLuck=[];
+  let daewoon=[],annualLuck=[],yunInfo={};
   try{
-   const yun=eight.getYun(document.getElementById("gender").value==="male"?1:0,2);
-   const list=yun.getDaYun(10)||[];
+   const genderValue=document.getElementById("gender").value==="male"?1:0;
+   const yun=eight.getYun(genderValue,2);
+   const startSolar=safeCall(yun,"getStartSolar",null);
+   yunInfo={
+    순행여부:safeCall(yun,"isForward",null),
+    대운기산_년수:safeCall(yun,"getStartYear",null),
+    대운기산_개월:safeCall(yun,"getStartMonth",null),
+    대운기산_일수:safeCall(yun,"getStartDay",null),
+    실제대운시작일:startSolar?`${startSolar.getYear()}-${String(startSolar.getMonth()).padStart(2,"0")}-${String(startSolar.getDay()).padStart(2,"0")}`:"자료 없음",
+    성별계산값:genderValue,
+    계산방식:"lunar-javascript EightChar.getYun(gender, 2)"
+   };
+   const list=yun.getDaYun(11)||[];
    daewoon=list.map(item=>{
+    const ganZhi=safeCall(item,"getGanZhi","");
+    const detail=enrichGanZhi(ganZhi,dayMaster);
     const liuNian=typeof item.getLiuNian==="function"?(item.getLiuNian(10)||[]):[];
-    return {
-     startAge:safeCall(item,"getStartAge",null),
-     endAge:safeCall(item,"getEndAge",null),
-     startYear:safeCall(item,"getStartYear",null),
-     endYear:safeCall(item,"getEndYear",null),
-     ganZhi:safeCall(item,"getGanZhi",""),
-     liuNian:liuNian.map(n=>({year:safeCall(n,"getYear",null),age:safeCall(n,"getAge",null),ganZhi:safeCall(n,"getGanZhi","")}))
-    };
+    let hiddenStems=[];
+    if(detail.zhi){
+     const hiddenMap={
+      "자":["계"],"축":["기","계","신"],"인":["갑","병","무"],"묘":["을"],
+      "진":["무","을","계"],"사":["병","무","경"],"오":["정","기"],
+      "미":["기","정","을"],"신":["경","임","무"],"유":["신"],
+      "술":["무","신","정"],"해":["임","갑"]
+     };
+     hiddenStems=hiddenMap[detail.zhi]||[];
+    }
+    detail.branchHiddenGan=hiddenStems;
+    detail.branchHiddenTenGods=hiddenStems.map(stem=>getTenGod(dayMaster,stem));
+    detail.startAge=safeCall(item,"getStartAge",null);
+    detail.endAge=safeCall(item,"getEndAge",null);
+    detail.startYear=safeCall(item,"getStartYear",null);
+    detail.endYear=safeCall(item,"getEndYear",null);
+    detail.periodType=detail.ganZhi?"정규 대운":"대운 시작 전 기간";
+    detail.liuNian=liuNian.map(n=>{
+     const annual=enrichGanZhi(safeCall(n,"getGanZhi",""),dayMaster);
+     const year=safeCall(n,"getYear",null);
+     const hiddenMap={
+      "자":["계"],"축":["기","계","신"],"인":["갑","병","무"],"묘":["을"],
+      "진":["무","을","계"],"사":["병","무","경"],"오":["정","기"],
+      "미":["기","정","을"],"신":["경","임","무"],"유":["신"],
+      "술":["무","신","정"],"해":["임","갑"]
+     };
+     annual.year=year;
+     annual.age=safeCall(n,"getAge",null);
+     annual.branchHiddenGan=hiddenMap[annual.zhi]||[];
+     annual.branchHiddenTenGods=annual.branchHiddenGan.map(stem=>getTenGod(dayMaster,stem));
+     return annual;
+    });
+    return detail;
    });
    annualLuck=daewoon.flatMap(item=>item.liuNian||[]).filter(item=>item.year);
-  }catch(error){console.warn("대운·세운 계산 참고 오류:",error);}
+  }catch(error){
+   console.warn("대운·세운 계산 참고 오류:",error);
+   yunInfo.error=error.message||"대운 계산 실패";
+  }
 
   const currentYear=new Date().getFullYear();
-  const annualFlow=buildAnnualFlow(currentYear,currentYear+10);
-  const monthlyFlow=buildMonthlyFlow(2027);
+  const annualFlow=buildAnnualFlow(currentYear,currentYear+10,dayMaster);
+  const monthlyFlow=buildMonthlyFlow(2027,dayMaster);
+  const todayFlow=buildTodayFlow(dayMaster);
   const birthSolar=formatDate(solar);
   const birthLunar=lunar.getYear()+"년 "+Math.abs(lunar.getMonth())+"월 "+lunar.getDay()+"일"+(lunar.getMonth()<0?" (윤달)":"");
-  const birthTime=unknown?"출생 시각 미상":timeValue+" (보정 적용 시 "+String(adjustedHour).padStart(2,"0")+":"+String(adjustedMinute).padStart(2,"0")+")";
+  const birthTime=unknown
+   ?"출생 시각 미상"
+   :timeValue+" (보정 적용 시 "+String(adjustedHour).padStart(2,"0")+":"+String(adjustedMinute).padStart(2,"0")+")";
 
   currentChart={
    name:document.getElementById("personName").value.trim()||"이름 미입력",
    gender:document.getElementById("gender").value==="male"?"남성":"여성",
    maritalStatus:document.getElementById("maritalStatus").value,
    calendar:calendar==="solar"?"양력":"음력",
-   solarDate:birthSolar,lunarDate:birthLunar,zodiac:chartLunar.getYearShengXiao?.()||"미상",
-   birthHour:birthTime,hasBirthHour:!unknown,
+   solarDate:birthSolar,
+   lunarDate:birthLunar,
+   zodiac:safeCall(chartLunar,"getYearShengXiao","미상"),
+   birthHour:birthTime,
+   hasBirthHour:!unknown,
    place:document.getElementById("birthPlace").value.trim()||"대한민국",
-   pillars:p,daewoon,elementCount,
+   pillars:p,
+   daewoon,
+   elementCount,
    advanced:{
-    dayMaster:{천간:dayMaster,오행:dayMasterElement,음양:"갑병무경임은 양간, 을정기신계는 음간"},
+    dayMaster:{
+     천간:dayMaster,
+     오행:dayMasterElement,
+     음양:getPolarity(dayMaster),
+     분석자료:dayMasterAnalysis
+    },
+    dayMasterAnalysis,
     pillarDetails,
     monthSeason,
     storageAnalysis,
+    yunInfo,
     annualFlow,
     monthlyFlow2027:monthlyFlow,
+    todayFlow,
     annualLuckFromDaewoon:annualLuck,
     calculationLimits:[
-     "신강·신약과 용신은 자동 확정하지 않았으며 전문가 판단이 필요한 영역입니다.",
-     "재물 창고 판별은 지장간 십성과 원국 전체를 함께 해석해야 합니다.",
-     "연운은 해당 연도 7월 1일의 연주를 대표값으로 확인했습니다.",
-     "월운은 해당 월 15일의 월주 대표값이며 절입일 전후에는 달라질 수 있습니다."
+     "신강·신약과 용신은 오행 개수만으로 자동 확정하지 않았습니다.",
+     "일간 강약은 월령·통근·생조·설기·극제 등을 함께 검토해야 합니다.",
+     "재물 창고는 지장간 십성과 원국 전체의 구조를 함께 해석해야 합니다.",
+     "연운은 입춘 이후인 해당 연도 7월 1일의 연주를 대표값으로 확인했습니다.",
+     "월운은 해당 월 15일의 월주 대표값이며 절입일 전후에는 달라질 수 있습니다.",
+     "오늘의 일진은 기기 현지 날짜를 기준으로 계산했습니다."
     ]
    },
    calculationNotes:[
     "연주는 입춘 기준 만세력 결과를 사용합니다.",
     "월주는 절기 기준 만세력 결과를 사용합니다.",
-    unknown?"출생 시각 미상으로 시주는 확인하지 않았습니다.":"한국 출생 시각은 32분 보정 및 해당 서머타임 기간 보정을 적용했습니다.",
-    "출생 시각 미상인 경우 시주와 말년 관련 세부 해석의 범위가 제한됩니다.",
-    "대운·세운은 사용 중인 lunar-javascript 라이브러리의 계산 결과를 전달합니다."
+    unknown?"출생 시각 미상으로 시주는 확인하지 않았습니다.":"한국 출생 시각은 기존 프로그램의 32분 보정 및 1987·1988년 서머타임 보정을 적용했습니다.",
+    "출생 시각 미상인 경우 시주와 시주 기반 말년 해석은 제한됩니다.",
+    "대운·세운은 lunar-javascript 라이브러리의 계산 결과를 사용합니다.",
+    "한국 이외 지역은 현지 시간대와 경도 보정 자료가 입력되지 않아 별도 보정하지 않았습니다."
    ]
   };
 
   document.getElementById("result").style.display="block";
   document.getElementById("resultTitle").textContent=currentChart.name+"님의 사주 원국";
-  document.getElementById("birthSummary").textContent="양력 "+birthSolar+" · 음력 "+birthLunar+" · "+currentChart.gender+" · "+currentChart.maritalStatus;
+  document.getElementById("birthSummary").textContent=
+   "양력 "+birthSolar+" · 음력 "+birthLunar+" · "+currentChart.gender+" · "+currentChart.maritalStatus;
+
   const names=["년주","월주","일주","시주"];
-  document.getElementById("pillars").innerHTML=pillars.map((item,i)=>`<div class="pillar"><b>${names[i]}</b><strong>${item.gan}${item.zhi}</strong><small>${item.gan==="미상"?"출생 시각 미상":getElement(item.gan)+" · "+getElement(item.zhi)}</small></div>`).join("");
-  const storageText=storageAnalysis.length?storageAnalysis.map(x=>x.창고명+"("+x.위치+")").join(", "):"원국에서 확인된 진·술·축·미 창고 글자 없음";
-  document.getElementById("interpretation").innerHTML="<p>사주 원국과 심층 분석 자료 계산이 완료되었습니다.</p><p><strong>일간:</strong> "+dayMaster+"("+dayMasterElement+")</p><p><strong>재물 창고 후보:</strong> "+escapeHtml(storageText)+"</p><p>원하는 분석 항목을 선택해 주세요.</p>";
-  showStatus("사주 원국과 지장간·십성·재물 창고·대운·세운 참고 자료 계산이 완료되었습니다.");
+  document.getElementById("pillars").innerHTML=pillars.map((item,i)=>
+   `<div class="pillar"><b>${names[i]}</b><strong>${escapeHtml(item.gan+item.zhi)}</strong><small>${item.gan==="미상"?"출생 시각 미상":getElement(item.gan)+" · "+getElement(item.zhi)}</small></div>`
+  ).join("");
+
+  const storageText=storageAnalysis.length
+   ?storageAnalysis.map(x=>x.창고명+"("+x.위치+")").join(", ")
+   :"원국에서 확인된 진·술·축·미 창고 글자 없음";
+
+  document.getElementById("interpretation").innerHTML=
+   "<p>사주 원국과 심층 계산 자료 계산이 완료되었습니다.</p>"+
+   "<p><strong>일간:</strong> "+escapeHtml(dayMaster+"("+dayMasterElement+", "+getPolarity(dayMaster)+"간)")+"</p>"+
+   "<p><strong>월령:</strong> "+escapeHtml(monthSeason.월주)+"</p>"+
+   "<p><strong>재물 창고 후보:</strong> "+escapeHtml(storageText)+"</p>"+
+   "<p><strong>대운:</strong> "+(daewoon.length?"계산 완료":"자료 확인 필요")+"</p>"+
+   "<p><strong>오늘 일진:</strong> "+escapeHtml(todayFlow.dayGanZhi)+" ("+escapeHtml(todayFlow.date)+")</p>"+
+   "<p>원하는 분석 항목을 선택해 주세요.</p>";
+
+  showStatus("사주 원국과 지장간·십성·십이운성·재물 창고·대운·세운·오늘의 일진 자료 계산이 완료되었습니다.");
   document.getElementById("result").scrollIntoView({behavior:"smooth",block:"start"});
  }catch(error){
   console.error("사주 계산 오류:",error);
@@ -318,17 +600,27 @@ function calculateSaju(){
  }
 }
 async function runAnalysis(mode){
- if(!currentChart){showStatus("먼저 생년월일을 입력하고 사주 원국을 계산해 주세요.",true);return;}
+ if(!currentChart){
+  showStatus("먼저 생년월일을 입력하고 사주 원국을 계산해 주세요.",true);
+  return;
+ }
  const buttons=[...document.querySelectorAll(".report-actions button")];
  const area=document.getElementById("interpretation");
  buttons.forEach(button=>button.disabled=true);
  area.innerHTML="<p>운명의 서재가 사주 원국과 심층 계산 자료를 분석하고 있습니다. 잠시 기다려 주세요.</p>";
  area.scrollIntoView({behavior:"smooth",block:"start"});
  try{
-  const response=await fetch("/api/interpret",{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({chart:currentChart,mode})});
+  const response=await fetch("/api/interpret",{
+   method:"POST",
+   headers:{"Content-Type":"application/json","Accept":"application/json"},
+   body:JSON.stringify({chart:currentChart,mode})
+  });
   const rawText=await response.text();
   let data;
-  try{data=JSON.parse(rawText);}catch{throw new Error("서버가 JSON이 아닌 응답을 보냈습니다.\nHTTP 상태: "+response.status+"\n서버 응답:\n"+rawText.substring(0,1500));}
+  try{data=JSON.parse(rawText);}
+  catch{
+   throw new Error("서버가 JSON이 아닌 응답을 보냈습니다.\nHTTP 상태: "+response.status+"\n서버 응답:\n"+rawText.substring(0,1500));
+  }
   if(!response.ok)throw new Error(data.error||data.message||"서버 오류가 발생했습니다. HTTP "+response.status);
   const result=data.interpretation||data.text||data.result;
   if(!result)throw new Error("AI 분석 결과가 비어 있습니다.");
@@ -336,20 +628,33 @@ async function runAnalysis(mode){
   area.scrollIntoView({behavior:"smooth",block:"start"});
  }catch(error){
   console.error("사주 분석 오류:",error);
-  area.innerHTML="<h3>분석 중 문제가 발생했습니다.</h3><pre style='white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f3ed;padding:12px;border-radius:8px;'>"+escapeHtml(error.message)+"</pre><p>위 오류 내용을 확인한 뒤 다시 시도해 주세요.</p>";
- }finally{buttons.forEach(button=>button.disabled=false);}
+  area.innerHTML="<h3>분석 중 문제가 발생했습니다.</h3><pre style='white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f3ed;padding:12px;border-radius:8px;'>"+
+   escapeHtml(error.message)+"</pre><p>위 오류 내용을 확인한 뒤 다시 시도해 주세요.</p>";
+ }finally{
+  buttons.forEach(button=>button.disabled=false);
+ }
 }
 function escapeHtml(value){
- return String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+ return String(value).replace(/[&<>"']/g,char=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[char]));
 }
 function inlineFormat(text){
- return escapeHtml(text).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\*(.+?)\*/g,"<em>$1</em>").replace(/`(.+?)`/g,"<code>$1</code>");
+ return escapeHtml(text)
+  .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
+  .replace(/\*(.+?)\*/g,"<em>$1</em>")
+  .replace(/`(.+?)`/g,"<code>$1</code>");
 }
 function renderInterpretation(markdown){
  const lines=String(markdown).replace(/\r/g,"").split("\n");
- let html="",inList=false,inTable=false,tableFirstRow=true;
- const closeList=()=>{if(inList){html+="</ul>";inList=false;}};
- const closeTable=()=>{if(inTable){html+="</tbody></table>";inTable=false;}};
+ let html="",inList=false,inOrdered=false,inTable=false,tableFirstRow=true;
+ const closeList=()=>{
+  if(inList){html+="</ul>";inList=false;}
+  if(inOrdered){html+="</ol>";inOrdered=false;}
+ };
+ const closeTable=()=>{
+  if(inTable){html+="</tbody></table>";inTable=false;}
+ };
  for(const raw of lines){
   const line=raw.trim();
   if(!line){closeList();continue;}
@@ -360,19 +665,39 @@ function renderInterpretation(markdown){
    if(!inTable){html+="<table><tbody>";inTable=true;tableFirstRow=true;}
    const tag=tableFirstRow?"th":"td";
    html+="<tr>"+cells.map(cell=>`<${tag}>${inlineFormat(cell)}</${tag}>`).join("")+"</tr>";
-   tableFirstRow=false;continue;
+   tableFirstRow=false;
+   continue;
   }else closeTable();
-  if(/^###\s/.test(line)){closeList();html+="<h3>"+inlineFormat(line.replace(/^###\s/,""))+"</h3>";}
-  else if(/^##\s/.test(line)){closeList();html+="<h2>"+inlineFormat(line.replace(/^##\s/,""))+"</h2>";}
-  else if(/^#\s/.test(line)){closeList();html+="<h1>"+inlineFormat(line.replace(/^#\s/,""))+"</h1>";}
-  else if(/^[-*]\s/.test(line)){if(!inList){html+="<ul>";inList=true;}html+="<li>"+inlineFormat(line.replace(/^[-*]\s/,""))+"</li>";}
-  else if(line.startsWith(">")){closeList();html+="<blockquote>"+inlineFormat(line.replace(/^>\s?/,""))+"</blockquote>";}
-  else{closeList();html+="<p>"+inlineFormat(line)+"</p>";}
+
+  if(/^###\s/.test(line)){
+   closeList();html+="<h3>"+inlineFormat(line.replace(/^###\s/,""))+"</h3>";
+  }else if(/^##\s/.test(line)){
+   closeList();html+="<h2>"+inlineFormat(line.replace(/^##\s/,""))+"</h2>";
+  }else if(/^#\s/.test(line)){
+   closeList();html+="<h1>"+inlineFormat(line.replace(/^#\s/,""))+"</h1>";
+  }else if(/^[-*]\s/.test(line)){
+   if(inOrdered){html+="</ol>";inOrdered=false;}
+   if(!inList){html+="<ul>";inList=true;}
+   html+="<li>"+inlineFormat(line.replace(/^[-*]\s/,""))+"</li>";
+  }else if(/^\d+[.)]\s/.test(line)){
+   if(inList){html+="</ul>";inList=false;}
+   if(!inOrdered){html+="<ol>";inOrdered=true;}
+   html+="<li>"+inlineFormat(line.replace(/^\d+[.)]\s/,""))+"</li>";
+  }else if(line.startsWith(">")){
+   closeList();html+="<blockquote>"+inlineFormat(line.replace(/^>\s?/,""))+"</blockquote>";
+  }else{
+   closeList();html+="<p>"+inlineFormat(line)+"</p>";
+  }
  }
- closeList();closeTable();document.getElementById("interpretation").innerHTML=html;
+ closeList();
+ closeTable();
+ document.getElementById("interpretation").innerHTML=html;
 }
 function printReport(){
- if(!currentChart){showStatus("먼저 사주 원국을 계산해 주세요.",true);return;}
+ if(!currentChart){
+  showStatus("먼저 사주 원국을 계산해 주세요.",true);
+  return;
+ }
  window.print();
 }
 document.getElementById("timeUnknown").addEventListener("change",function(){
